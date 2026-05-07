@@ -1,0 +1,1 @@
+#\!/bin/sh\n. \"\\"\/usr/bin/bash/_/husky.sh\"\n\nnpx commitlint --edit $1
