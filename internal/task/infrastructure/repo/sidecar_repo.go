@@ -5,6 +5,7 @@ package repo
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/rs/zerolog"
@@ -64,4 +65,4 @@ func (r *SidecarRepo) List(ctx context.Context) ([]*entity.Task, error) {
 }
 
 // errNotImplemented is a sentinel used until Phase 2 wires the real gRPC client.
-var errNotImplemented = fmt.Errorf("not implemented")
+var errNotImplemented = errors.New("not implemented")
