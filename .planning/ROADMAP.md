@@ -1,6 +1,6 @@
 ## Phases
 
-- [ ] **Phase 1: Architecture & Core App** - Establish clean architecture foundation and core app without cloud SDKs
+- [x] **Phase 1: Architecture & Core App** - Establish clean architecture foundation and core app without cloud SDKs — Completed 2026-05-07
 - [ ] **Phase 2: Sidecar Proxy** - Implement sidecar exposing unified API and cloud operations
 - [ ] **Phase 3: Terraform Infrastructure** - Deploy symmetric cloud resources for both AWS and Azure
 - [ ] **Phase 4: Observability** - Add OpenTelemetry tracing, metrics, and logging across app and sidecar
@@ -118,7 +118,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1 - Architecture & Core App | 1/5 | In progress | Plan 1 done 2026-05-07 |
+| 1 - Architecture & Core App | 1/1 | Complete | 2026-05-07 |
 | 2 - Sidecar Proxy | 0/5 | Not started | - |
 | 3 - Terraform Infrastructure | 0/7 | Not started | - |
 | 4 - Observability | 0/5 | Not started | - |
