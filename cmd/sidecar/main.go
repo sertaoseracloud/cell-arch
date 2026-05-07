@@ -21,6 +21,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/yourorg/cell-arch/internal/config"
+	awssidecar "github.com/yourorg/cell-arch/internal/sidecar/aws"
 	"github.com/yourorg/cell-arch/internal/sidecar/server"
 	"github.com/yourorg/cell-arch/pkg/shutdown"
 	taskpb "github.com/yourorg/cell-arch/proto"
@@ -66,8 +67,23 @@ func run(ctx context.Context, logger zerolog.Logger) error {
 	// 6. Build gRPC server with mTLS.
 	grpcServer := grpc.NewServer(grpc.Creds(creds))
 
-	// 7. Register TaskServiceServer (D-09, D-12).
-	taskpb.RegisterTaskServiceServer(grpcServer, server.NewTaskServer(logger))
+	// 7. Build TaskServiceServer and wire cloud backends (D-09, D-12).
+	taskServer := server.NewTaskServer(logger)
+
+	// Wire AWS DynamoDB backend when region and table are configured.
+	// Uses IRSA / DefaultCredentialChain — no static credentials (D-10).
+	if cfg.AWSRegion != "" && cfg.DynamoDBTable != "" {
+		dynamo, dbErr := awssidecar.NewDynamoDBClient(ctx, cfg.AWSRegion, cfg.DynamoDBTable, logger)
+		if dbErr != nil {
+			// Log but do not fail — AWS may be unavailable in non-AWS environments.
+			logger.Warn().Err(dbErr).Msg("AWS DynamoDB backend unavailable; aws routing will fail at request time")
+		} else {
+			taskServer.RegisterBackend("aws", dynamo)
+			logger.Info().Str("region", cfg.AWSRegion).Str("table", cfg.DynamoDBTable).Msg("AWS DynamoDB backend registered")
+		}
+	}
+
+	taskpb.RegisterTaskServiceServer(grpcServer, taskServer)
 
 	logger.Info().Str("addr", addr).Msg("sidecar starting with mTLS")
 
