@@ -10,19 +10,20 @@
 
 ## Current Position
 - **Phase**: 2 — Sidecar Proxy
-- **Plan**: 01-01 complete — Plan 01-02 (DynamoDB handler) next
-- **Status**: Phase 2 in progress — Plan 01 (gRPC server + mTLS) complete
-- **Progress**: ███░░░░░░░ 24%
+- **Plan**: 01-02 complete — Plan 01-03 (CosmosDB handler) next
+- **Status**: Phase 2 in progress — Plans 01-01 and 01-02 complete
+- **Progress**: ████░░░░░░ 29%
 
 ## Performance Metrics
 | Metric | Value |
 |--------|-------|
 | Phases complete | 1 / 5 |
-| Plans complete | 2 / 28 |
+| Plans complete | 3 / 28 |
 | Requirements met | 12 / 37 |
 | Test coverage | 100% (usecase, config, pkg) / 97% (sidecar/config) |
 | Plan 1 duration | 679s (~11m) |
 | Plan 2-01 duration | 299s (~5m) |
+| Plan 2-02 duration | 480s (~8m) |
 
 ## Accumulated Context
 ### Key Decisions
@@ -48,9 +49,11 @@
 - D-15: mTLS with TLS 1.3 minimum, RequireAndVerifyClientCert
 - D-16: sidecar.yaml config file with env-var override layer
 - Hand-written proto stubs with JSON codec (protoc unavailable in build env)
+- D-17: DynamoDBAPI interface extracted for testability without AWS credentials
+- D-18: CloudBackend interface in server for multi-cloud extensibility (RegisterBackend pattern)
+- D-19: DynamoDB backend init non-fatal in main.go (warns and continues if AWS unavailable)
 
 ### Open TODOs
-- Phase 2 Plan 02: Wire DynamoDB client into TaskServer.GetTask/CreateTask/QueryTasks/DeleteTask
 - Phase 2 Plan 03: Wire CosmosDB client into TaskServer for azure cloud routing
 - Phase 2 Plan 04: Add IRSA + Workload Identity auth layers
 - Phase 2 Plan 05: Integration tests with testcontainers-go (LocalStack + CosmosDB emulator)
@@ -73,10 +76,13 @@
 - SIDE-03: TaskService protobuf contract defined (proto/task.proto) ✓
 - SIDE-04: Per-request cloud selector (cloud field in all requests) ✓
 - SIDE-05: HealthCheck returns SERVING ✓
+- SIDE-06 (partial): DynamoDB backend wired for aws cloud routing (plan 02) ✓
 
 ## Session Continuity
 - Phase 1 complete (2026-05-07): 1 plan, 5 tasks, 5 commits
 - Summary at .planning/phases/01-architecture-core-app/01-SUMMARY.md
 - Phase 2 Plan 01 complete (2026-05-07): 4 tasks, 4 commits (5e5998e, a4a1b5a, 9c34d5c, 161d877)
 - Summary at .planning/phases/02-sidecar-proxy/01-01-SUMMARY.md
-- Next: Phase 2 Plan 02 — DynamoDB handler (GetTask, CreateTask, QueryTasks, DeleteTask)
+- Phase 2 Plan 02 complete (2026-05-07): 4 tasks, 3 commits (cdf17e2, cc0f51f, 58e7021)
+- Summary at .planning/phases/02-sidecar-proxy/01-02-SUMMARY.md
+- Next: Phase 2 Plan 03 — CosmosDB handler
