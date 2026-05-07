@@ -5,6 +5,7 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -39,6 +40,9 @@ func (s *Service) Get(ctx context.Context, id string) (*entity.Task, error) {
 
 // Create persists a new task, setting timestamps and default status.
 func (s *Service) Create(ctx context.Context, title, description string) (*entity.Task, error) {
+	if strings.TrimSpace(title) == "" {
+		return nil, fmt.Errorf("service: create task: title must not be empty")
+	}
 	s.logger.Debug().Str("title", title).Msg("Service.Create")
 	now := time.Now().UTC()
 	t := &entity.Task{
@@ -57,6 +61,9 @@ func (s *Service) Create(ctx context.Context, title, description string) (*entit
 
 // Update applies changes to an existing task, bumping its UpdatedAt timestamp.
 func (s *Service) Update(ctx context.Context, id, title, description string, status entity.Status) (*entity.Task, error) {
+	if id == "" {
+		return nil, fmt.Errorf("service: update task: id must not be empty")
+	}
 	s.logger.Debug().Str("task_id", id).Msg("Service.Update")
 	existing, err := s.repo.Get(ctx, id)
 	if err != nil {
