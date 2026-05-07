@@ -23,8 +23,13 @@ variable "endpoint_subnet_id" {
   type        = string
 }
 
-variable "private_dns_zone_id" {
-  description = "ID of the private DNS zone for CosmosDB (created in live root)"
+variable "private_dns_zone_name" {
+  description = "Name of the private DNS zone for CosmosDB (created in live root)"
+  type        = string
+}
+
+variable "vnet_id" {
+  description = "ID of the VNet to link the private DNS zone to (usually the Hub VNet)"
   type        = string
 }
 

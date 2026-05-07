@@ -9,11 +9,11 @@ iteration: 1
 created: 2026-05-07
 ---
 
-# Phase3 — Code Review Fix Report (Wave 1)
+# Phase3 — Code Review Fix Report (Wave 2)
 
 ## Summary
 
-- **Findings in scope:** 1 (1 warning)
+- **Findings in scope:** 1 (1 medium)
 - **Fixed:** 1
 - **Skipped:** 0
 - **Status:** all_fixed
@@ -22,31 +22,14 @@ created: 2026-05-07
 
 ## Fixes Applied
 
-### Fix‑01 — Add default to `aws_region` variable (warning WR‑01)
+### Fix‑01 — Add `local_account_disabled = true` (MED‑01)
 
-**File:** `infra/modules/aws-vpc/variables.tf`  
-**Line:** 11‑14
+**File:** `infra/modules/azure-aks/main.tf`  
+**Line:** 46
 
-**Problem:** `aws_region` variable had no default value, forcing live configs to always supply it.
+**Problem:** AKS cluster had Workload Identity enabled but `local_account_disabled` was not set, allowing local admin accounts.
 
-**Fix:** Added `default = "us-east-1"` to the variable definition.
-
-**Before:**
-```hcl
-variable "aws_region" {
-  description = "AWS region, required for DynamoDB Gateway Endpoint service name"
-  type        = string
-}
-```
-
-**After:**
-```hcl
-variable "aws_region" {
-  description = "AWS region, required for DynamoDB Gateway Endpoint service name"
-  type        = string
-  default     = "us-east-1"
-}
-```
+**Fix:** Added `local_account_disabled = true` inside the `azurerm_kubernetes_cluster` resource block.
 
 **Verification:** `terraform validate` passes.
 
@@ -54,13 +37,17 @@ variable "aws_region" {
 
 ## Skipped Findings
 
-None. All in‑scope findings were fixed.
+- **LOW‑01** (K8s version default) — informational, not in fix scope.
+- **INFO‑01** (EKS max_size offset) — informational, not in fix scope.
+- **INFO‑02** (AKS zones hard-coded) — informational, not in fix scope.
+- **INFO‑03** (Federated credential namespace) — informational, not in fix scope.
 
 ---
 
 ## Next Steps
 
-- All issues resolved. Ready for next wave or phase verification.
+- All medium+ findings resolved.
+- Informational notes remain for future reference.
 - Full report saved to `03-REVIEW-FIX.md`.
 
 ---
