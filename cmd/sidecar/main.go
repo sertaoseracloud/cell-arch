@@ -2,13 +2,18 @@
 // The sidecar holds all cloud SDK credentials and exposes a unified
 // gRPC API on localhost:50051 for the main app to consume.
 //
-// Phase 2 will wire the full gRPC server with protobuf-generated handlers.
-// This Phase 1 skeleton establishes the graceful-shutdown pattern (D-04),
-// structured logging (D-08), and manual constructor wiring (D-02).
+// Design decisions honoured:
+//   - D-09: gRPC only, no HTTP/REST.
+//   - D-11: grpc-go server framework.
+//   - D-15: mTLS between app and sidecar (cert/key loaded from TLS_CERT / TLS_KEY env vars).
+//   - D-04: graceful shutdown via signal.NotifyContext.
+//   - D-08: zerolog structured logging.
 package main
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"net"
 	"os"
@@ -16,10 +21,11 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/yourorg/cell-arch/internal/config"
-	sidecaraws "github.com/yourorg/cell-arch/internal/sidecar/aws"
-	sidecarazure "github.com/yourorg/cell-arch/internal/sidecar/azure"
+	"github.com/yourorg/cell-arch/internal/sidecar/server"
 	"github.com/yourorg/cell-arch/pkg/shutdown"
+	taskpb "github.com/yourorg/cell-arch/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 func main() {
@@ -31,8 +37,6 @@ func main() {
 	defer stop()
 
 	if err := run(ctx, logger); err != nil {
-		// logger.Fatal writes the log and calls os.Exit(1); defer stop() will NOT run.
-		// This is acceptable for fatal startup errors where resource cleanup is unnecessary.
 		logger.Fatal().Err(err).Msg("sidecar error")
 	}
 	logger.Info().Msg("sidecar stopped gracefully")
@@ -40,53 +44,34 @@ func main() {
 
 // run contains the main sidecar logic.
 func run(ctx context.Context, logger zerolog.Logger) error {
-	// 3. Load typed configuration.
+	// 3. Load typed configuration (env vars + sidecar.yaml via plan 03).
 	cfg, err := config.LoadSidecarConfig(ctx)
 	if err != nil {
 		return fmt.Errorf("load sidecar config: %w", err)
 	}
 
-	// 4. Initialise AWS client (IRSA — no static credentials).
-	awsClient, err := sidecaraws.NewDynamoDBClient(
-		ctx,
-		cfg.AWSRegion,
-		cfg.DynamoDBTable,
-		logger,
-	)
+	// 4. Build mTLS server credentials (D-15).
+	creds, err := buildServerTLSCredentials(cfg)
 	if err != nil {
-		return fmt.Errorf("create AWS DynamoDB client: %w", err)
+		return fmt.Errorf("build mTLS credentials: %w", err)
 	}
-	_ = awsClient // Phase 2 will register gRPC handlers
 
-	// 5. Initialise Azure client (Workload Identity — no static credentials).
-	azureClient, err := sidecarazure.NewCosmosDBClient(
-		ctx,
-		cfg.AzureCosmosEndpoint,
-		cfg.CosmosDatabase,
-		cfg.CosmosContainer,
-		logger,
-	)
-	if err != nil {
-		return fmt.Errorf("create Azure CosmosDB client: %w", err)
-	}
-	_ = azureClient // Phase 2 will register gRPC handlers
-
-	// 6. Start gRPC listener.
+	// 5. Start gRPC listener.
 	addr := fmt.Sprintf(":%d", cfg.GRPCPort)
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		return fmt.Errorf("listen %s: %w", addr, err)
 	}
 
-	// Phase 1: plain gRPC server (no TLS until cert-manager is configured in Phase 5).
-	// Phase 2 will add mTLS via grpc.Creds.
-	grpcServer := grpc.NewServer()
+	// 6. Build gRPC server with mTLS.
+	grpcServer := grpc.NewServer(grpc.Creds(creds))
 
-	// Phase 2 TODO: register TaskServiceServer handler here.
+	// 7. Register TaskServiceServer (D-09, D-12).
+	taskpb.RegisterTaskServiceServer(grpcServer, server.NewTaskServer(logger))
 
-	logger.Info().Str("addr", addr).Msg("sidecar starting")
+	logger.Info().Str("addr", addr).Msg("sidecar starting with mTLS")
 
-	// 7. Serve in background; cancel on context cancellation.
+	// 8. Serve in background; cancel on context cancellation.
 	errCh := make(chan error, 1)
 	go func() {
 		if err := grpcServer.Serve(lis); err != nil {
@@ -95,15 +80,57 @@ func run(ctx context.Context, logger zerolog.Logger) error {
 		close(errCh)
 	}()
 
-	// 8. Block until OS signal or serve error.
+	// 9. Block until OS signal or serve error.
 	select {
 	case <-ctx.Done():
-		logger.Info().Msg("shutdown signal received, draining connections…")
+		logger.Info().Msg("shutdown signal received, draining connections")
 		grpcServer.GracefulStop()
 		return <-errCh
 	case err := <-errCh:
 		return err
 	}
+}
+
+// buildServerTLSCredentials creates mTLS credentials from TLS_CERT and TLS_KEY env vars.
+// The client CA cert is loaded from TLS_CA_CERT env var (optional; defaults to system pool).
+func buildServerTLSCredentials(cfg *config.SidecarConfig) (credentials.TransportCredentials, error) {
+	if cfg.TLSCert == "" || cfg.TLSKey == "" {
+		return nil, fmt.Errorf("TLS_CERT and TLS_KEY environment variables are required for mTLS")
+	}
+
+	// Load server certificate and private key.
+	cert, err := tls.LoadX509KeyPair(cfg.TLSCert, cfg.TLSKey)
+	if err != nil {
+		return nil, fmt.Errorf("load TLS key pair: %w", err)
+	}
+
+	// Build the client CA pool for mutual authentication.
+	clientCA := x509.NewCertPool()
+	caPath := os.Getenv("TLS_CA_CERT")
+	if caPath != "" {
+		caCert, err := os.ReadFile(caPath)
+		if err != nil {
+			return nil, fmt.Errorf("read CA cert %s: %w", caPath, err)
+		}
+		if !clientCA.AppendCertsFromPEM(caCert) {
+			return nil, fmt.Errorf("failed to append CA cert from %s", caPath)
+		}
+	} else {
+		// Fall back to the system CA pool; still enforces client cert.
+		var errPool error
+		clientCA, errPool = x509.SystemCertPool()
+		if errPool != nil {
+			return nil, fmt.Errorf("load system cert pool: %w", errPool)
+		}
+	}
+
+	tlsCfg := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    clientCA,
+		MinVersion:   tls.VersionTLS13,
+	}
+	return credentials.NewTLS(tlsCfg), nil
 }
 
 // initLogger creates a zerolog.Logger appropriate for the runtime environment.
