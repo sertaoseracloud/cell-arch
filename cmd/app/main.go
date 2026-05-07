@@ -1,5 +1,5 @@
 // Package main is the entry point for the cell-arch main application.
-// It wires all dependencies via manual constructors (D-02), sets up structured
+// It wires all dependencies via the container (D-02), sets up structured
 // logging (D-08), and handles graceful shutdown on SIGINT/SIGTERM (D-04).
 //
 // IMPORTANT: This package must NOT import any AWS or Azure SDK packages.
@@ -15,9 +15,6 @@ import (
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/yourorg/cell-arch/internal/config"
-	"github.com/yourorg/cell-arch/internal/task/infrastructure/repo"
-	"github.com/yourorg/cell-arch/internal/task/usecase"
 )
 
 func main() {
@@ -38,31 +35,24 @@ func main() {
 // run contains the main application logic. Accepting ctx and logger as arguments
 // makes it straightforward to test without capturing os.Exit.
 func run(ctx context.Context, logger zerolog.Logger) error {
-	// 3. Load typed configuration from environment variables (D-02, D-03).
-	cfg, err := config.LoadAppConfig(ctx)
+	// 3. Wire all dependencies via the application container (D-02).
+	c, err := newContainer(ctx, logger)
 	if err != nil {
-		return fmt.Errorf("load config: %w", err)
+		return fmt.Errorf("run: %w", err)
 	}
-	logger.Info().
-		Str("sidecar_addr", cfg.SidecarAddr).
-		Str("env", cfg.Env).
-		Int("grpc_port", cfg.GRPCPort).
-		Msg("configuration loaded")
 
-	// 4. Wire the infrastructure adapter (sidecar repo) — no cloud SDKs here.
-	taskRepo := repo.NewSidecarRepo(cfg.SidecarAddr, "aws", logger)
+	c.logger.Info().
+		Str("sidecar_addr", c.cfg.SidecarAddr).
+		Str("env", c.cfg.Env).
+		Int("grpc_port", c.cfg.GRPCPort).
+		Msg("application started — awaiting shutdown signal")
 
-	// 5. Wire the use-case service with the repository.
-	taskService := usecase.NewService(taskRepo, logger)
+	// Phase 2 will start the HTTP/gRPC server using c.taskService here.
+	_ = c.taskService
 
-	// Suppress unused-variable warning until HTTP/gRPC server is wired in Phase 2.
-	_ = taskService
-
-	logger.Info().Msg("application started — awaiting shutdown signal")
-
-	// 6. Block until the OS sends SIGINT or SIGTERM.
+	// 4. Block until the OS sends SIGINT or SIGTERM.
 	<-ctx.Done()
-	logger.Info().Msg("shutdown signal received, stopping…")
+	c.logger.Info().Msg("shutdown signal received, stopping…")
 
 	return nil
 }
