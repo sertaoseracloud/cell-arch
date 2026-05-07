@@ -43,6 +43,7 @@ resource "azurerm_kubernetes_cluster" "main" {
 
   oidc_issuer_enabled       = true
   workload_identity_enabled = true
+  local_account_disabled     = true
 
   kubernetes_version = var.kubernetes_version
 

@@ -1,12 +1,12 @@
 ---
 phase: 3
 slug: terraform-infrastructure
-status: clean
-files_reviewed: 6
+status: issues_found
+files_reviewed: 9
 critical: 0
-warning: 0
-info: 2
-total: 2
+warning: 1
+info: 3
+total: 4
 created: 2026-05-07
 ---
 
@@ -22,10 +22,30 @@ created: 2026-05-07
 
 ## Findings
 
+### MED-01 — AKS cluster missing `local_account_disabled` (Medium)
+
+**File:** `infra/modules/azure-aks/main.tf`  
+**Line:** ~45
+
+**Problem:** The AKS cluster has Workload Identity enabled but `local_account_disabled` is not set to `true`. This allows local admin accounts, which undermines the Workload Identity security model.
+
+**Fix:** Add `local_account_disabled = true` inside the `azurerm_kubernetes_cluster` resource block.
+
+---
+
+### LOW-01 — Kubernetes version default outdated (Low)
+
+**File:** `infra/modules/azure-aks/variables.tf`  
+**Line:** 34
+
+**Problem:** Default `kubernetes_version = "1.29"` may be outdated. Consider updating to `"1.33"` to match EKS version and ensure feature parity.
+
+---
+
 ### INFO-01 — Node group max_size fixed offset (Info)
 
 **File:** `infra/modules/aws-eks/main.tf`  
-**Line:** ~line 70 (scaling_config block)
+**Line:** ~70 (scaling_config block)
 
 **Note:** `max_size = var.node_count + 2` uses a fixed offset. Acceptable for PoC; for production consider using a variable or dynamic scaling policy.
 
@@ -34,9 +54,18 @@ created: 2026-05-07
 ### INFO-02 — AKS zones hard-coded (Info)
 
 **File:** `infra/modules/azure-aks/main.tf`  
-**Line:** ~line 32 (`zones = ["1","2","3"]`)
+**Line:** 32 (`zones = ["1","2","3"]`)
 
 **Note:** Hard-coded zones may not be available in all Azure regions. Consider making this a variable with region-specific defaults.
+
+---
+
+### INFO-03 — Federated credential subject format (Info)
+
+**File:** `infra/modules/azure-aks/main.tf`  
+**Line:** 62
+
+**Note:** `subject = "system:serviceaccount:default:${var.service_account_name}"` assumes `namespace = "default"`. If namespace changes, this will break. Consider adding a `namespace` variable.
 
 ---
 
