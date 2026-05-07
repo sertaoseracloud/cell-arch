@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package task;
+
+option go_package = "github.com/yourorg/cell-arch/proto";
+
+// TaskService exposes a unified API for managing tasks across cloud providers.
+// The `cloud` field in each request selects the backend (aws or azure) at
+// request time per decision D-12.
+service TaskService {
+  rpc GetTask(GetTaskRequest) returns (GetTaskResponse);
+  rpc CreateTask(CreateTaskRequest) returns (CreateTaskResponse);
+  rpc QueryTasks(QueryTasksRequest) returns (QueryTasksResponse);
+  rpc DeleteTask(DeleteTaskRequest) returns (DeleteTaskResponse);
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+// Task is the wire representation of the domain Task entity.
+message Task {
+  string id          = 1;
+  string title       = 2;
+  string description = 3;
+  string status      = 4;
+  string created_at  = 5;
+  string updated_at  = 6;
+}
+
+message GetTaskRequest {
+  string task_id = 1;
+  // cloud selects the backend provider: "aws" or "azure".
+  string cloud   = 2;
+}
+
+message GetTaskResponse {
+  Task task = 1;
+}
+
+message CreateTaskRequest {
+  string title       = 1;
+  string description = 2;
+  // cloud selects the backend provider: "aws" or "azure".
+  string cloud       = 3;
+}
+
+message CreateTaskResponse {
+  Task task = 1;
+}
+
+message QueryTasksRequest {
+  // cloud selects the backend provider: "aws" or "azure".
+  string cloud = 1;
+}
+
+message QueryTasksResponse {
+  repeated Task tasks = 1;
+}
+
+message DeleteTaskRequest {
+  string task_id = 1;
+  // cloud selects the backend provider: "aws" or "azure".
+  string cloud   = 2;
+}
+
+message DeleteTaskResponse {
+  bool success = 1;
+}
+
+// HealthCheckRequest carries no fields — the sidecar probes both clouds.
+message HealthCheckRequest {}
+
+// ServingStatus mirrors grpc.health.v1 semantics.
+enum ServingStatus {
+  UNKNOWN     = 0;
+  SERVING     = 1;
+  NOT_SERVING = 2;
+}
+
+message HealthCheckResponse {
+  ServingStatus status = 1;
+}
