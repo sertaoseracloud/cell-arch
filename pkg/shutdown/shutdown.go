@@ -22,31 +22,27 @@ import (
 //	// ... start servers ...
 //	<-ctx.Done()  // blocks until signal received
 func Graceful(parent context.Context, logger zerolog.Logger) (context.Context, context.CancelFunc) {
+	// sigCh is registered BEFORE NotifyContext so we capture the signal that
+	// triggers cancellation. NotifyContext consumes the signal internally and
+	// cancels ctx; sigCh receives the same signal concurrently.
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+
 	ctx, stop := signal.NotifyContext(parent, syscall.SIGINT, syscall.SIGTERM)
 
 	// Spawn a goroutine that logs when the signal is received so that
 	// operational logs show the shutdown reason.
 	go func() {
-		<-ctx.Done()
-		logger.Info().
-			Str("signal", signalName()).
-			Msg("OS signal received — initiating graceful shutdown")
+		select {
+		case sig := <-sigCh:
+			logger.Info().
+				Str("signal", sig.String()).
+				Msg("OS signal received — initiating graceful shutdown")
+		case <-ctx.Done():
+			// Context cancelled for a non-signal reason (e.g. stop() called directly).
+		}
+		signal.Stop(sigCh)
 	}()
 
 	return ctx, stop
-}
-
-// signalName returns a human-readable name for the signal that triggered
-// shutdown. It reads the process' signal state via os.Interrupt as a fallback.
-func signalName() string {
-	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
-	defer signal.Stop(ch)
-
-	select {
-	case sig := <-ch:
-		return sig.String()
-	default:
-		return "unknown"
-	}
 }
