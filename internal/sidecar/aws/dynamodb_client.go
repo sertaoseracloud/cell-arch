@@ -2,6 +2,7 @@ package aws
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -9,6 +10,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/rs/zerolog"
 )
+
+// ErrItemNotFound is returned by Get when the requested item does not exist in DynamoDB.
+var ErrItemNotFound = errors.New("item not found")
 
 type DynamoDBClient struct {
 	client    *dynamodb.Client
@@ -43,7 +47,7 @@ func (d *DynamoDBClient) Get(ctx context.Context, id string) (map[string]types.A
 	}
 	if result.Item == nil {
 		d.logger.Warn().Str("id", id).Msg("DynamoDB item not found")
-		return nil, fmt.Errorf("item not found")
+		return nil, ErrItemNotFound
 	}
 	return result.Item, nil
 }
