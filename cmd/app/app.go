@@ -31,7 +31,8 @@ func newContainer(ctx context.Context, logger zerolog.Logger) (*container, error
 	}
 
 	// Infrastructure layer: sidecar repository (no cloud SDKs here).
-	taskRepo := repo.NewSidecarRepo(cfg.SidecarAddr, "aws", logger)
+	// Cloud provider is loaded from CLOUD_PROVIDER env var (default: "aws").
+	taskRepo := repo.NewSidecarRepo(cfg.SidecarAddr, string(cfg.Cloud), logger)
 
 	// Use-case layer: business logic wired with repository.
 	taskSvc := usecase.NewService(taskRepo, logger)

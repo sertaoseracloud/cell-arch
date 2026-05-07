@@ -9,6 +9,16 @@ import (
 	"strconv"
 )
 
+// Cloud identifies the cloud provider the application targets.
+type Cloud string
+
+const (
+	// CloudAWS identifies Amazon Web Services as the cloud provider.
+	CloudAWS Cloud = "aws"
+	// CloudAzure identifies Microsoft Azure as the cloud provider.
+	CloudAzure Cloud = "azure"
+)
+
 // AppConfig holds the main application configuration.
 type AppConfig struct {
 	// SidecarAddr is the address of the local sidecar gRPC server.
@@ -19,6 +29,9 @@ type AppConfig struct {
 	Env string
 	// GRPCPort is the port the main app listens on for its own gRPC server.
 	GRPCPort int
+	// Cloud identifies the target cloud provider (aws or azure).
+	// Loaded from CLOUD_PROVIDER env var; defaults to "aws".
+	Cloud Cloud
 }
 
 // SidecarConfig holds the sidecar proxy configuration.
@@ -54,6 +67,7 @@ func LoadAppConfig(_ context.Context) (*AppConfig, error) {
 		LogLevel:    getEnvOrDefault("LOG_LEVEL", "info"),
 		Env:         getEnvOrDefault("APP_ENV", "development"),
 		GRPCPort:    port,
+		Cloud:       Cloud(getEnvOrDefault("CLOUD_PROVIDER", "aws")),
 	}, nil
 }
 
