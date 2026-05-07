@@ -13,6 +13,11 @@ variable "location" {
   type        = string
 }
 
+variable "resource_group_name" {
+  description = "Azure resource group name"
+  type        = string
+}
+
 variable "endpoint_subnet_id" {
   description = "Subnet ID for CosmosDB Private Endpoint (from azure-vnet module)"
   type        = string

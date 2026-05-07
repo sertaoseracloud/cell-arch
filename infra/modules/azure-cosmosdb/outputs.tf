@@ -18,7 +18,6 @@ output "resource_id" {
   value       = azurerm_cosmosdb_account.main.id
 }
 
-# Mandatory output for symmetric module contract
 output "policy_object_id" {
   description = "Placeholder — Azure uses RBAC Role Assignments, not policy objects"
   value       = azurerm_cosmosdb_account.main.id

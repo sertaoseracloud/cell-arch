@@ -7,7 +7,7 @@ terraform {
   }
 }
 
-# ── CosmosDB Account (Session consistency, no public access) ───────
+# ── CosmosDB Account ────────────────────────────────────────
 
 resource "azurerm_cosmosdb_account" "main" {
   name                = "${var.project_name}-cosmos-${var.environment}"
@@ -32,7 +32,7 @@ resource "azurerm_cosmosdb_account" "main" {
   })
 }
 
-# ── SQL Database ────────────────────────────────────────────────────
+# ── SQL Database ────────────────────────────────────────────
 
 resource "azurerm_cosmosdb_sql_database" "main" {
   name                = "${var.project_name}-db-${var.environment}"
@@ -40,7 +40,7 @@ resource "azurerm_cosmosdb_sql_database" "main" {
   account_name        = azurerm_cosmosdb_account.main.name
 }
 
-# ── SQL Container (partition key /task) ──────────────────────────
+# ── SQL Container ───────────────────────────────────────────
 
 resource "azurerm_cosmosdb_sql_container" "main" {
   name                = "${var.project_name}-container-${var.environment}"
@@ -50,7 +50,7 @@ resource "azurerm_cosmosdb_sql_container" "main" {
   partition_key_path = "/task"
 }
 
-# ── Private Endpoint (CosmosDB → private subnet) ──────────────────
+# ── Private Endpoint ─────────────────────────────────────────
 
 resource "azurerm_private_endpoint" "cosmosdb" {
   name                = "${var.project_name}-cosmos-ep-${var.environment}"
@@ -67,11 +67,11 @@ resource "azurerm_private_endpoint" "cosmosdb" {
   tags = var.tags
 }
 
-# ── DNS Zone Link (Private Endpoint → private DNS zone) ────────
+# ── DNS Zone Link ───────────────────────────────────────────
 
 resource "azurerm_private_dns_zone_virtual_network_link" "cosmosdb" {
   name                  = "${var.project_name}-cosmos-dns-link-${var.environment}"
   resource_group_name   = var.resource_group_name
   private_dns_zone_id  = var.private_dns_zone_id
-  virtual_network_id    = split("/", var.endpoint_subnet_id)[4]  # crude; use locals in real impl
+  virtual_network_id    = var.endpoint_subnet_id
 }
