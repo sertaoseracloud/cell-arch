@@ -31,8 +31,9 @@ func main() {
 	defer stop()
 
 	if err := run(ctx, logger); err != nil {
+		// logger.Fatal writes the log and calls os.Exit(1); defer stop() will NOT run.
+		// This is acceptable for fatal startup errors where resource cleanup is unnecessary.
 		logger.Fatal().Err(err).Msg("sidecar error")
-		os.Exit(1)
 	}
 	logger.Info().Msg("sidecar stopped gracefully")
 }
