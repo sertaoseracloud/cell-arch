@@ -118,7 +118,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1 - Architecture & Core App | 0/5 | Not started | - |
+| 1 - Architecture & Core App | 1/5 | In progress | Plan 1 done 2026-05-07 |
 | 2 - Sidecar Proxy | 0/5 | Not started | - |
 | 3 - Terraform Infrastructure | 0/7 | Not started | - |
 | 4 - Observability | 0/5 | Not started | - |
