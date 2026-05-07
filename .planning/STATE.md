@@ -10,18 +10,19 @@
 
 ## Current Position
 - **Phase**: 2 — Sidecar Proxy
-- **Plan**: None yet (awaiting `/gsd-plan-phase 2`)
-- **Status**: Phase 1 complete — Phase 2 ready to plan
-- **Progress**: ██░░░░░░░░ 20%
+- **Plan**: 01-01 complete — Plan 01-02 (DynamoDB handler) next
+- **Status**: Phase 2 in progress — Plan 01 (gRPC server + mTLS) complete
+- **Progress**: ███░░░░░░░ 24%
 
 ## Performance Metrics
 | Metric | Value |
 |--------|-------|
 | Phases complete | 1 / 5 |
-| Plans complete | 1 / 28 |
-| Requirements met | 7 / 37 |
-| Test coverage | 100% (usecase, config, pkg) |
+| Plans complete | 2 / 28 |
+| Requirements met | 12 / 37 |
+| Test coverage | 100% (usecase, config, pkg) / 97% (sidecar/config) |
 | Plan 1 duration | 679s (~11m) |
+| Plan 2-01 duration | 299s (~5m) |
 
 ## Accumulated Context
 ### Key Decisions
@@ -38,11 +39,23 @@
 - D-06: testify v1.11.1 for assertions and mock.Mock for mocking
 - D-07: golangci-lint with noctx + contextcheck linters
 - D-08: zerolog v1.34.0, ConsoleWriter in dev, raw JSON in production
+- D-09: gRPC only — no HTTP/REST for sidecar protocol
+- D-10: IRSA (AWS) + Workload Identity (Azure) — no static credentials
+- D-11: grpc-go server framework (google.golang.org/grpc v1.81.0)
+- D-12: Per-request cloud selector (cloud field in each gRPC request)
+- D-13: gRPC status codes for error propagation (codes.Unimplemented, etc.)
+- D-14: HealthCheck returns SERVING (cloud probe in plan 02)
+- D-15: mTLS with TLS 1.3 minimum, RequireAndVerifyClientCert
+- D-16: sidecar.yaml config file with env-var override layer
+- Hand-written proto stubs with JSON codec (protoc unavailable in build env)
 
 ### Open TODOs
-- Phase 2: Wire proto/gRPC TaskServiceServer in cmd/sidecar/main.go
-- Phase 2: Replace SidecarRepo stubs with real gRPC client calls
-- Phase 2: Add HTTP/gRPC server in cmd/app
+- Phase 2 Plan 02: Wire DynamoDB client into TaskServer.GetTask/CreateTask/QueryTasks/DeleteTask
+- Phase 2 Plan 03: Wire CosmosDB client into TaskServer for azure cloud routing
+- Phase 2 Plan 04: Add IRSA + Workload Identity auth layers
+- Phase 2 Plan 05: Integration tests with testcontainers-go (LocalStack + CosmosDB emulator)
+- Phase 2: Replace SidecarRepo stubs with real gRPC client calls in cmd/app
+- Replace JSON codec with protoc-generated stubs when protoc is available
 
 ### Blockers
 - None
@@ -55,10 +68,15 @@
 - ARCH-05: Graceful shutdown (SIGINT/SIGTERM) in both binaries ✓
 - TEST-01: Unit tests with 100% coverage on usecase/pkg layers ✓
 - TEST-03: TDD Red-Green-Refactor cycle followed ✓
+- SIDE-01: gRPC sidecar server starts on :50051 ✓
+- SIDE-02: mTLS enforced (RequireAndVerifyClientCert, TLS 1.3) ✓
+- SIDE-03: TaskService protobuf contract defined (proto/task.proto) ✓
+- SIDE-04: Per-request cloud selector (cloud field in all requests) ✓
+- SIDE-05: HealthCheck returns SERVING ✓
 
 ## Session Continuity
 - Phase 1 complete (2026-05-07): 1 plan, 5 tasks, 5 commits
 - Summary at .planning/phases/01-architecture-core-app/01-SUMMARY.md
-- Verification passed (human-approved graceful shutdown)
-- Code review: 2 critical, 6 warnings, 5 info — run /gsd-code-review-fix 1 to fix
-- Next: /gsd-discuss-phase 2 or /gsd-plan-phase 2
+- Phase 2 Plan 01 complete (2026-05-07): 4 tasks, 4 commits (5e5998e, a4a1b5a, 9c34d5c, 161d877)
+- Summary at .planning/phases/02-sidecar-proxy/01-01-SUMMARY.md
+- Next: Phase 2 Plan 02 — DynamoDB handler (GetTask, CreateTask, QueryTasks, DeleteTask)
