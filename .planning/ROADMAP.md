@@ -2,7 +2,7 @@
 
 - [x] **Phase 1: Architecture & Core App** - Establish clean architecture foundation and core app without cloud SDKs — Completed 2026-05-07
 - [x] **Phase 2: Sidecar Proxy** - Implement sidecar exposing unified API and cloud operations — Completed 2026-05-07
-- [ ] **Phase 3: Terraform Infrastructure** - Deploy symmetric cloud resources for both AWS and Azure
+- [x] **Phase 3: Terraform Infrastructure** - Deploy symmetric cloud resources for both AWS and Azure — Completed 2026-05-07
 - [ ] **Phase 4: Observability** - Add OpenTelemetry tracing, metrics, and logging across app and sidecar
 - [ ] **Phase 5: CI/CD & Security** - Build secure pipeline, secrets management, and testing framework
 
@@ -65,13 +65,13 @@
 **Plans**: 7 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Build AWS VPC module: Hub+Spoke VPCs, private subnets, Gateway Endpoint (TERR-01, SECR-03)
-- [ ] 01-02-PLAN.md — Build Azure VNet module: Hub+Spoke VNets, private subnets, VNet peering (TERR-02, SECR-03)
-- [ ] 01-03-PLAN.md — Create EKS module: private cluster, t3.medium×2, OIDC provider, IRSA role (TERR-03)
-- [ ] 01-04-PLAN.md — Create AKS module: cluster, Standard_D2s_v3×2, Workload Identity, federated credential (TERR-04)
-- [ ] 01-05-PLAN.md — Add DynamoDB module (PAY_PER_REQUEST + SSE) and CosmosDB module (Session + Private Link) (TERR-05, TERR-06)
-- [ ] 01-06-PLAN.md — Bootstrap state backends (S3+use_lockfile / Blob+Lease) and wire all live environment roots (TERR-07, TERR-08)
-- [ ] 01-07-PLAN.md — Deploy cert-manager v1.20.2 and Secrets Store CSI Driver v1.6.0 in all live roots (SECR-01, SECR-02, SECR-03)
+- [x] 01-01-PLAN.md — Build AWS VPC module: Hub+Spoke VPCs, private subnets, Gateway Endpoint (TERR-01, SECR-03)
+- [x] 01-02-PLAN.md — Build Azure VNet module: Hub+Spoke VNets, private subnets, VNet peering (TERR-02, SECR-03)
+- [x] 01-03-PLAN.md — Create EKS module: private cluster, t3.medium×2, OIDC provider, IRSA role (TERR-03)
+- [x] 01-04-PLAN.md — Create AKS module: cluster, Standard_D2s_v3×2, Workload Identity, federated credential (TERR-04)
+- [x] 01-05-PLAN.md — Add DynamoDB module (PAY_PER_REQUEST + SSE) and CosmosDB module (Session + Private Link) (TERR-05, TERR-06)
+- [x] 01-06-PLAN.md — Bootstrap state backends (S3+use_lockfile / Blob+Lease) and wire all live environment roots (TERR-07, TERR-08)
+- [x] 01-07-PLAN.md — Deploy cert-manager v1.20.2 and Secrets Store CSI Driver v1.6.0 in all live roots (SECR-01, SECR-02, SECR-03)
 
 ### Phase 4: Observability
 
@@ -120,6 +120,6 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1 - Architecture & Core App | 1/1 | Complete | 2026-05-07 |
 | 2 - Sidecar Proxy | 5/5 | Complete | 2026-05-07 |
-| 3 - Terraform Infrastructure | 0/7 | Not started | - |
+| 3 - Terraform Infrastructure | 7/7 | Complete | 2026-05-07 |
 | 4 - Observability | 0/5 | Not started | - |
 | 5 - CI/CD & Security | 0/6 | Not started | - |

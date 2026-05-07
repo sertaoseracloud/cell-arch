@@ -4,21 +4,21 @@
 
 ## Project Reference
 - **Core Value**: Cloud-agnostic Go application using Clean Architecture and sidecar pattern for multicloud capability
-- **Current Focus**: Phase 3 — Terraform Infrastructure
+- **Current Focus**: Phase 4 — Observability (Phase 3 complete)
 - **Granularity**: Coarse (3-5 phases)
 - **Mode**: Interactive
 
 ## Current Position
-- **Phase**: 3 — Terraform Infrastructure
-- **Plan**: Phase 2 complete — All 5 plans done
-- **Status**: Phase 2 complete — Ready for Phase 3
-- **Progress**: █████████░ 100%
+- **Phase**: 4 — Observability
+- **Plan**: Phase 3 complete — All 7 plans done
+- **Status**: Phase 3 complete — Ready for Phase 4
+- **Progress**: ███████████░ 60%
 
 ## Performance Metrics
 | Metric | Value |
 |--------|-------|
-| Phases complete | 2 / 5 |
-| Plans complete | 5 / 28 |
+| Phases complete | 3 / 5 |
+| Plans complete | 13 / 28 |
 | Requirements met | 20 / 37 |
 | Test coverage | 100% (usecase, config, pkg) / 85% (sidecar) |
 | Phase 2 duration | ~30m |
@@ -54,9 +54,8 @@
 - D-21: Azure CosmosDB client with Workload Identity (DefaultAzureCredential)
 
 ### Open TODOs
-- Phase 3: Build Terraform modules for AWS VPC, Azure VNet, EKS, AKS, DynamoDB, CosmosDB
 - Phase 2 Plan 05: Add integration tests with testcontainers-go (LocalStack + CosmosDB emulator)
-- Replace JSON codec with protoc-generated stubs when protoc is available
+- Phase 4: Build observability stack (OpenTelemetry, metrics, structured logging)
 
 ### Blockers
 - None
@@ -75,10 +74,19 @@
 - SIDE-04: Per-request cloud selector (cloud field in all requests) ✓
 - SIDE-05: HealthCheck returns SERVING ✓
 - SIDE-06: DynamoDB + CosmosDB backends wired for aws/azure cloud routing ✓
+- TERR-01: AWS VPC module (Hub+Spoke, private subnets, NAT GW, Peering) ✓
+- TERR-02: Azure VNet module (Hub+Spoke, private subnets, Peering) ✓
+- TERR-03: EKS module (private cluster, IRSA, OIDC, managed node group) ✓
+- TERR-04: AKS module (private cluster, Workload Identity, federated credential) ✓
+- TERR-05: DynamoDB module (PAY_PER_REQUEST, encryption, PITR) ✓
+- TERR-06: CosmosDB module (Session consistency, private access, container) ✓
+- SECR-01: EKS IRSA trust policy (StringEquals, no wildcards) ✓
+- SECR-02: AKS Workload Identity + local_account_disabled ✓
+- SECR-03: All resources in private subnets, no public endpoints ✓
 
 ## Session Continuity
 - Phase 1 complete (2026-05-07): 1 plan, 5 tasks, 5 commits
 - Summary at .planning/phases/01-architecture-core-app/01-SUMMARY.md
 - Phase 2 complete (2026-05-07): 5 plans, 15+ tasks, 8+ commits
 - Phase 2 Summary: All sidecar plans executed — gRPC server, DynamoDB, CosmosDB, cloud selector, health-check
-- Next: Phase 3 — Terraform Infrastructure (AWS VPC, Azure VNet, EKS, AKS, DB modules)
+- Next: Phase 4 — Observability (OpenTelemetry, metrics, logging)
