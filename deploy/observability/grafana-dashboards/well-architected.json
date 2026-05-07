@@ -1,0 +1,39 @@
+{
+  "annotations": { "list": [] },
+  "editing": false,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Request Latency (p95)",
+      "type": "graph",
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum(rate(request_latency_seconds_bucket[5m])) by (service))" }
+      ],
+      "yAxis": { "unit": "s" }
+    },
+    {
+      "title": "Error Rate (%)",
+      "type": "graph",
+      "targets": [
+        { "expr": "sum(rate(request_latency_seconds_count{status_code!=\"OK\"}[5m])) / sum(rate(request_latency_seconds_count[5m])) * 100" }
+      ],
+      "yAxis": { "unit": "percent" }
+    },
+    {
+      "title": "Request Volume",
+      "type": "graph",
+      "targets": [
+        { "expr": "sum(rate(request_latency_seconds_count[5m])) by (cloud_provider)" }
+      ]
+    }
+  ],
+  "schemaVersion": 36,
+  "style": "dark",
+  "tags": ["well-architected", "observability"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "title": "Well-Architected Dashboard",
+  "uid": "well-architected"
+}

@@ -1,0 +1,39 @@
+{
+  "annotations": { "list": [] },
+  "editing": false,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "CPU Utilisation (%)",
+      "type": "graph",
+      "targets": [
+        { "expr": "avg(rate(process_cpu_seconds_total[5m])) by (service) * 100" }
+      ],
+      "yAxis": { "unit": "percent" }
+    },
+    {
+      "title": "Memory Utilisation (MiB)",
+      "type": "graph",
+      "targets": [
+        { "expr": "avg(process_resident_memory_bytes) by (service) / 1024 / 1024" }
+      ]
+    },
+    {
+      "title": "Estimated CO₂e per Request (g)",
+      "type": "graph",
+      "targets": [
+        { "expr": "sum(rate(request_latency_seconds_count[5m])) by (cloud_provider) * 0.0002" }
+      ],
+      "yAxis": { "unit": "short" }
+    }
+  ],
+  "schemaVersion": 36,
+  "style": "dark",
+  "tags": ["greenops", "sustainability"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "title": "GreenOps Dashboard",
+  "uid": "greenops"
+}

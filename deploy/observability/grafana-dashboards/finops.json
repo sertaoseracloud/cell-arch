@@ -1,0 +1,38 @@
+{
+  "annotations": { "list": [] },
+  "editing": false,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Cost per Request (USD)",
+      "type": "graph",
+      "targets": [
+        { "expr": "sum(rate(request_latency_seconds_count[5m])) by (cloud_provider) * 0.000001" }
+      ],
+      "yAxis": { "unit": "currencyUSD" }
+    },
+    {
+      "title": "Requests per Cloud",
+      "type": "graph",
+      "targets": [
+        { "expr": "sum(rate(request_latency_seconds_count[5m])) by (cloud_provider)" }
+      ]
+    },
+    {
+      "title": "Request Size (bytes)",
+      "type": "graph",
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum(rate(request_latency_seconds_bucket[5m])) by (cloud_provider))" }
+      ]
+    }
+  ],
+  "schemaVersion": 36,
+  "style": "dark",
+  "tags": ["finops", "cost"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "title": "FinOps Dashboard",
+  "uid": "finops"
+}

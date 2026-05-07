@@ -29,6 +29,8 @@ import (
 	taskpb "github.com/yourorg/cell-arch/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+
+	"github.com/yourorg/cell-arch/internal/middleware"
 )
 
 func main() {
@@ -66,8 +68,13 @@ func run(ctx context.Context, logger zerolog.Logger) error {
 		return fmt.Errorf("listen %s: %w", addr, err)
 	}
 
-	// 6. Build gRPC server with mTLS.
-	grpcServer := grpc.NewServer(grpc.Creds(creds))
+	// 6. Build gRPC server with mTLS and OTel interceptors.
+	grpcServer := grpc.NewServer(
+		append(
+			[]grpc.ServerOption{grpc.Creds(creds)},
+			middleware.GrpcServerOptions()...,
+		)...,
+	)
 
 	// 7. Build TaskServiceServer and wire cloud backends (D-09, D-12).
 	taskServer := server.NewTaskServer(logger)

@@ -72,6 +72,11 @@ Plans:
 - [x] 01-05-PLAN.md — Add DynamoDB module (PAY_PER_REQUEST + SSE) and CosmosDB module (Session + Private Link) (TERR-05, TERR-06)
 - [x] 01-06-PLAN.md — Bootstrap state backends (S3+use_lockfile / Blob+Lease) and wire all live environment roots (TERR-07, TERR-08)
 - [x] 01-07-PLAN.md — Deploy cert-manager v1.20.2 and Secrets Store CSI Driver v1.6.0 in all live roots (SECR-01, SECR-02, SECR-03)
+- [x] 04-01-PLAN.md — Create observability sidecar, collector config, DaemonSet (OBSV-01) — Wave 1 complete
+- [x] 04-02-PLAN.md — Initialize OpenTelemetry SDK in app and sidecar (OBSV-01) — Wave 1 complete
+- [ ] 04-03-PLAN.md — Add gRPC interceptors for trace propagation (OBSV-02) — Wave 2 pending
+- [ ] 04-04-PLAN.md — Metrics, structured logging, Grafana dashboards (OBSV-03, OBSV-04) — Wave 2 pending
+- [ ] 04-05-PLAN.md — Performance benchmark with ghz and CI integration (TEST-05) — Wave 3 pending
 
 ### Phase 4: Observability
 
@@ -121,5 +126,5 @@ Plans:
 | 1 - Architecture & Core App | 1/1 | Complete | 2026-05-07 |
 | 2 - Sidecar Proxy | 5/5 | Complete | 2026-05-07 |
 | 3 - Terraform Infrastructure | 7/7 | Complete | 2026-05-07 |
-| 4 - Observability | 0/5 | Not started | - |
+| 4 - Observability | 2/5 | In progress (Wave 1 done) | 2026-05-07 |
 | 5 - CI/CD & Security | 0/6 | Not started | - |
