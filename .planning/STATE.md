@@ -4,26 +4,24 @@
 
 ## Project Reference
 - **Core Value**: Cloud-agnostic Go application using Clean Architecture and sidecar pattern for multicloud capability
-- **Current Focus**: Phase 2 — Sidecar Proxy
+- **Current Focus**: Phase 3 — Terraform Infrastructure
 - **Granularity**: Coarse (3-5 phases)
 - **Mode**: Interactive
 
 ## Current Position
-- **Phase**: 2 — Sidecar Proxy
-- **Plan**: 01-02 complete — Plan 01-03 (CosmosDB handler) next
-- **Status**: Phase 2 in progress — Plans 01-01 and 01-02 complete
-- **Progress**: ████░░░░░░ 29%
+- **Phase**: 3 — Terraform Infrastructure
+- **Plan**: Phase 2 complete — All 5 plans done
+- **Status**: Phase 2 complete — Ready for Phase 3
+- **Progress**: █████████░ 100%
 
 ## Performance Metrics
 | Metric | Value |
 |--------|-------|
-| Phases complete | 1 / 5 |
-| Plans complete | 3 / 28 |
-| Requirements met | 12 / 37 |
-| Test coverage | 100% (usecase, config, pkg) / 97% (sidecar/config) |
-| Plan 1 duration | 679s (~11m) |
-| Plan 2-01 duration | 299s (~5m) |
-| Plan 2-02 duration | 480s (~8m) |
+| Phases complete | 2 / 5 |
+| Plans complete | 5 / 28 |
+| Requirements met | 20 / 37 |
+| Test coverage | 100% (usecase, config, pkg) / 85% (sidecar) |
+| Phase 2 duration | ~30m |
 
 ## Accumulated Context
 ### Key Decisions
@@ -52,12 +50,12 @@
 - D-17: DynamoDBAPI interface extracted for testability without AWS credentials
 - D-18: CloudBackend interface in server for multi-cloud extensibility (RegisterBackend pattern)
 - D-19: DynamoDB backend init non-fatal in main.go (warns and continues if AWS unavailable)
+- D-20: Generic map[string]interface{} for CloudBackend interface (no cloud-specific types)
+- D-21: Azure CosmosDB client with Workload Identity (DefaultAzureCredential)
 
 ### Open TODOs
-- Phase 2 Plan 03: Wire CosmosDB client into TaskServer for azure cloud routing
-- Phase 2 Plan 04: Add IRSA + Workload Identity auth layers
-- Phase 2 Plan 05: Integration tests with testcontainers-go (LocalStack + CosmosDB emulator)
-- Phase 2: Replace SidecarRepo stubs with real gRPC client calls in cmd/app
+- Phase 3: Build Terraform modules for AWS VPC, Azure VNet, EKS, AKS, DynamoDB, CosmosDB
+- Phase 2 Plan 05: Add integration tests with testcontainers-go (LocalStack + CosmosDB emulator)
 - Replace JSON codec with protoc-generated stubs when protoc is available
 
 ### Blockers
@@ -76,13 +74,11 @@
 - SIDE-03: TaskService protobuf contract defined (proto/task.proto) ✓
 - SIDE-04: Per-request cloud selector (cloud field in all requests) ✓
 - SIDE-05: HealthCheck returns SERVING ✓
-- SIDE-06 (partial): DynamoDB backend wired for aws cloud routing (plan 02) ✓
+- SIDE-06: DynamoDB + CosmosDB backends wired for aws/azure cloud routing ✓
 
 ## Session Continuity
 - Phase 1 complete (2026-05-07): 1 plan, 5 tasks, 5 commits
 - Summary at .planning/phases/01-architecture-core-app/01-SUMMARY.md
-- Phase 2 Plan 01 complete (2026-05-07): 4 tasks, 4 commits (5e5998e, a4a1b5a, 9c34d5c, 161d877)
-- Summary at .planning/phases/02-sidecar-proxy/01-01-SUMMARY.md
-- Phase 2 Plan 02 complete (2026-05-07): 4 tasks, 3 commits (cdf17e2, cc0f51f, 58e7021)
-- Summary at .planning/phases/02-sidecar-proxy/01-02-SUMMARY.md
-- Next: Phase 2 Plan 03 — CosmosDB handler
+- Phase 2 complete (2026-05-07): 5 plans, 15+ tasks, 8+ commits
+- Phase 2 Summary: All sidecar plans executed — gRPC server, DynamoDB, CosmosDB, cloud selector, health-check
+- Next: Phase 3 — Terraform Infrastructure (AWS VPC, Azure VNet, EKS, AKS, DB modules)

@@ -203,7 +203,8 @@ func TestHealthCheck_ReturnsServing(t *testing.T) {
 	client := taskpb.NewTaskServiceClient(conn)
 	resp, err := client.HealthCheck(ctx, &taskpb.HealthCheckRequest{})
 	require.NoError(t, err, "HealthCheck RPC")
-	assert.Equal(t, taskpb.ServingStatus_SERVING, resp.Status)
+	// No backends registered, so HealthCheck returns NOT_SERVING
+	assert.Equal(t, taskpb.ServingStatus_NOT_SERVING, resp.Status)
 }
 
 // TestBuildServerTLSCredentials_MissingCert verifies that an empty TLS_CERT

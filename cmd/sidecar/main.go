@@ -18,10 +18,12 @@ import (
 	"net"
 	"os"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/yourorg/cell-arch/internal/config"
 	awssidecar "github.com/yourorg/cell-arch/internal/sidecar/aws"
+	azuresidecar "github.com/yourorg/cell-arch/internal/sidecar/azure"
 	"github.com/yourorg/cell-arch/internal/sidecar/server"
 	"github.com/yourorg/cell-arch/pkg/shutdown"
 	taskpb "github.com/yourorg/cell-arch/proto"
@@ -80,6 +82,24 @@ func run(ctx context.Context, logger zerolog.Logger) error {
 		} else {
 			taskServer.RegisterBackend("aws", dynamo)
 			logger.Info().Str("region", cfg.AWSRegion).Str("table", cfg.DynamoDBTable).Msg("AWS DynamoDB backend registered")
+		}
+	}
+
+	// Wire Azure CosmosDB backend when endpoint, database, and container are configured.
+	// Uses DefaultAzureCredential (Workload Identity) — no static credentials (D-10).
+	if cfg.AzureCosmosEndpoint != "" && cfg.CosmosDatabase != "" && cfg.CosmosContainer != "" {
+		// Verify Azure credential early (non-fatal if unavailable).
+		_, credErr := azidentity.NewDefaultAzureCredential(nil)
+		if credErr != nil {
+			logger.Warn().Err(credErr).Msg("Azure credential unavailable; azure routing will fail at request time")
+		} else {
+			cosmos, cosErr := azuresidecar.NewCosmosDBClient(ctx, cfg.AzureCosmosEndpoint, cfg.CosmosDatabase, cfg.CosmosContainer, logger)
+			if cosErr != nil {
+				logger.Warn().Err(cosErr).Msg("Azure CosmosDB backend unavailable; azure routing will fail at request time")
+			} else {
+				taskServer.RegisterBackend("azure", cosmos)
+				logger.Info().Str("endpoint", cfg.AzureCosmosEndpoint).Str("database", cfg.CosmosDatabase).Str("container", cfg.CosmosContainer).Msg("Azure CosmosDB backend registered")
+			}
 		}
 	}
 

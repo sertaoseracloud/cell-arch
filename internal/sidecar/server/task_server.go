@@ -9,7 +9,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 	taskpb "github.com/yourorg/cell-arch/proto"
@@ -20,9 +19,9 @@ import (
 // CloudBackend is implemented by each cloud adapter (AWS DynamoDB, Azure CosmosDB).
 // All methods accept context.Context as the first argument (D-03).
 type CloudBackend interface {
-	Get(ctx context.Context, id string) (map[string]types.AttributeValue, error)
-	Create(ctx context.Context, item map[string]types.AttributeValue) error
-	Query(ctx context.Context) ([]map[string]types.AttributeValue, error)
+	Get(ctx context.Context, id string) (map[string]interface{}, error)
+	Create(ctx context.Context, item map[string]interface{}) error
+	Query(ctx context.Context) ([]map[string]interface{}, error)
 	Delete(ctx context.Context, id string) error
 }
 
@@ -61,11 +60,11 @@ func (s *TaskServer) backend(cloud string) (CloudBackend, error) {
 	return b, nil
 }
 
-// mapToTask converts a raw DynamoDB attribute map to a proto Task.
-func mapToTask(item map[string]types.AttributeValue) *taskpb.Task {
+// mapToTask converts a generic map to a proto Task.
+func mapToTask(item map[string]interface{}) *taskpb.Task {
 	str := func(key string) string {
-		if v, ok := item[key].(*types.AttributeValueMemberS); ok {
-			return v.Value
+		if v, ok := item[key].(string); ok {
+			return v
 		}
 		return ""
 	}
@@ -88,8 +87,19 @@ func mapError(err error) error {
 }
 
 // HealthCheck returns SERVING when the sidecar is up (D-14).
+// NOTE: This is a lightweight check — it only verifies that backends are registered.
+// Per D-14, no cloud connectivity probes are performed on each health check.
+// For production, consider periodic background probes for each backend.
 func (s *TaskServer) HealthCheck(ctx context.Context, _ *taskpb.HealthCheckRequest) (*taskpb.HealthCheckResponse, error) {
 	s.logger.Debug().Msg("HealthCheck called")
+	awsOk := s.backends["aws"] != nil
+	azureOk := s.backends["azure"] != nil
+
+	if !awsOk && !azureOk {
+		return &taskpb.HealthCheckResponse{
+			Status: taskpb.ServingStatus_NOT_SERVING,
+		}, nil
+	}
 	return &taskpb.HealthCheckResponse{
 		Status: taskpb.ServingStatus_SERVING,
 	}, nil
@@ -112,19 +122,22 @@ func (s *TaskServer) GetTask(ctx context.Context, req *taskpb.GetTaskRequest) (*
 // CreateTask persists a new task to the requested cloud backend (D-12).
 func (s *TaskServer) CreateTask(ctx context.Context, req *taskpb.CreateTaskRequest) (*taskpb.CreateTaskResponse, error) {
 	s.logger.Debug().Str("cloud", req.Cloud).Msg("CreateTask called")
+	if req.Title == "" {
+		return nil, status.Error(codes.InvalidArgument, "title is required")
+	}
 	b, err := s.backend(req.Cloud)
 	if err != nil {
 		return nil, err
 	}
 	now := time.Now().UTC().Format(time.RFC3339)
 	id := uuid.New().String()
-	item := map[string]types.AttributeValue{
-		"id":          &types.AttributeValueMemberS{Value: id},
-		"title":       &types.AttributeValueMemberS{Value: req.Title},
-		"description": &types.AttributeValueMemberS{Value: req.Description},
-		"status":      &types.AttributeValueMemberS{Value: "pending"},
-		"created_at":  &types.AttributeValueMemberS{Value: now},
-		"updated_at":  &types.AttributeValueMemberS{Value: now},
+	item := map[string]interface{}{
+		"id":          id,
+		"title":       req.Title,
+		"description": req.Description,
+		"status":      "pending",
+		"created_at":  now,
+		"updated_at":  now,
 	}
 	if err := b.Create(ctx, item); err != nil {
 		return nil, mapError(err)
@@ -162,4 +175,3 @@ func (s *TaskServer) DeleteTask(ctx context.Context, req *taskpb.DeleteTaskReque
 	}
 	return &taskpb.DeleteTaskResponse{Success: true}, nil
 }
-

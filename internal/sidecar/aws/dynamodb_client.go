@@ -33,6 +33,56 @@ type DynamoDBClient struct {
 	logger    zerolog.Logger
 }
 
+// avMapToInterface converts AWS DynamoDB attribute value map to a generic map[string]interface{}.
+func avMapToInterface(av map[string]types.AttributeValue) map[string]interface{} {
+	out := make(map[string]interface{}, len(av))
+	for k, v := range av {
+		switch val := v.(type) {
+		case *types.AttributeValueMemberS:
+			out[k] = val.Value
+		case *types.AttributeValueMemberN:
+			out[k] = val.Value
+		case *types.AttributeValueMemberBOOL:
+			out[k] = val.Value
+		case *types.AttributeValueMemberM:
+			out[k] = avMapToInterface(val.Value)
+		default:
+			out[k] = nil
+		}
+	}
+	return out
+}
+
+// interfaceMapToAttributeValue converts a generic map[string]interface{} to DynamoDB attribute values.
+func interfaceMapToAttributeValue(m map[string]interface{}) map[string]types.AttributeValue {
+	av := make(map[string]types.AttributeValue, len(m))
+	for k, v := range m {
+		switch val := v.(type) {
+		case string:
+			av[k] = &types.AttributeValueMemberS{Value: val}
+		case int, int32, int64, float32, float64:
+			av[k] = &types.AttributeValueMemberN{Value: fmt.Sprintf("%v", val)}
+		case bool:
+			av[k] = &types.AttributeValueMemberBOOL{Value: val}
+		case map[string]interface{}:
+			av[k] = &types.AttributeValueMemberM{Value: interfaceMapToAttributeValue(val)}
+		case []interface{}:
+			items := make([]types.AttributeValue, 0, len(val))
+			for _, itm := range val {
+				if m, ok := itm.(map[string]interface{}); ok {
+					items = append(items, &types.AttributeValueMemberM{Value: interfaceMapToAttributeValue(m)})
+				} else if s, ok := itm.(string); ok {
+					items = append(items, &types.AttributeValueMemberS{Value: s})
+				}
+			}
+			av[k] = &types.AttributeValueMemberL{Value: items}
+		default:
+			// Unsupported type, skip
+		}
+	}
+	return av
+}
+
 // NewDynamoDBClient creates a DynamoDBClient using IRSA / DefaultCredentialChain.
 // No static credentials are accepted — the SDK resolves credentials from the
 // pod's service-account token via the AWS_ROLE_ARN + AWS_WEB_IDENTITY_TOKEN_FILE
@@ -62,7 +112,7 @@ func NewDynamoDBClientFromAPI(api DynamoDBAPI, tableName string, logger zerolog.
 
 // Get retrieves a single item by its ID primary key.
 // Returns ErrItemNotFound when the item does not exist in the table.
-func (d *DynamoDBClient) Get(ctx context.Context, id string) (map[string]types.AttributeValue, error) {
+func (d *DynamoDBClient) Get(ctx context.Context, id string) (map[string]interface{}, error) {
 	d.logger.Debug().Str("id", id).Msg("DynamoDB GetItem")
 	result, err := d.api.GetItem(ctx, &dynamodb.GetItemInput{
 		TableName: &d.tableName,
@@ -78,16 +128,17 @@ func (d *DynamoDBClient) Get(ctx context.Context, id string) (map[string]types.A
 		d.logger.Warn().Str("id", id).Msg("DynamoDB item not found")
 		return nil, ErrItemNotFound
 	}
-	return result.Item, nil
+	return avMapToInterface(result.Item), nil
 }
 
 // Create persists a new item via PutItem.
 // The caller is responsible for marshaling the domain entity to AttributeValue map.
-func (d *DynamoDBClient) Create(ctx context.Context, item map[string]types.AttributeValue) error {
+func (d *DynamoDBClient) Create(ctx context.Context, item map[string]interface{}) error {
 	d.logger.Debug().Interface("item", item).Msg("DynamoDB PutItem")
+	avItem := interfaceMapToAttributeValue(item)
 	_, err := d.api.PutItem(ctx, &dynamodb.PutItemInput{
 		TableName: &d.tableName,
-		Item:      item,
+		Item:      avItem,
 	})
 	if err != nil {
 		d.logger.Error().Err(err).Msg("DynamoDB PutItem failed")
@@ -97,8 +148,10 @@ func (d *DynamoDBClient) Create(ctx context.Context, item map[string]types.Attri
 }
 
 // Query returns all items in the table via a full Scan.
+// NOTE: This performs a full table Scan with no LIMIT or filter expression.
+// For production use, add a Limit parameter or filter expression to avoid excessive read capacity consumption.
 // For production use consider adding filter expressions or paginated queries.
-func (d *DynamoDBClient) Query(ctx context.Context) ([]map[string]types.AttributeValue, error) {
+func (d *DynamoDBClient) Query(ctx context.Context) ([]map[string]interface{}, error) {
 	d.logger.Debug().Str("table", d.tableName).Msg("DynamoDB Scan")
 	result, err := d.api.Scan(ctx, &dynamodb.ScanInput{
 		TableName: &d.tableName,
@@ -107,7 +160,11 @@ func (d *DynamoDBClient) Query(ctx context.Context) ([]map[string]types.Attribut
 		d.logger.Error().Err(err).Msg("DynamoDB Scan failed")
 		return nil, fmt.Errorf("failed to scan items: %w", err)
 	}
-	return result.Items, nil
+	var items []map[string]interface{}
+	for _, av := range result.Items {
+		items = append(items, avMapToInterface(av))
+	}
+	return items, nil
 }
 
 // Delete removes an item by its ID primary key.

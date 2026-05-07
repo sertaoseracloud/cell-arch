@@ -7,7 +7,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -26,25 +25,25 @@ type mockBackend struct {
 	mock.Mock
 }
 
-func (m *mockBackend) Get(ctx context.Context, id string) (map[string]types.AttributeValue, error) {
+func (m *mockBackend) Get(ctx context.Context, id string) (map[string]interface{}, error) {
 	args := m.Called(ctx, id)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(map[string]types.AttributeValue), args.Error(1)
+	return args.Get(0).(map[string]interface{}), args.Error(1)
 }
 
-func (m *mockBackend) Create(ctx context.Context, item map[string]types.AttributeValue) error {
+func (m *mockBackend) Create(ctx context.Context, item map[string]interface{}) error {
 	args := m.Called(ctx, item)
 	return args.Error(0)
 }
 
-func (m *mockBackend) Query(ctx context.Context) ([]map[string]types.AttributeValue, error) {
+func (m *mockBackend) Query(ctx context.Context) ([]map[string]interface{}, error) {
 	args := m.Called(ctx)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]map[string]types.AttributeValue), args.Error(1)
+	return args.Get(0).([]map[string]interface{}), args.Error(1)
 }
 
 func (m *mockBackend) Delete(ctx context.Context, id string) error {
@@ -63,14 +62,14 @@ func newServerWithMock(t *testing.T) (*server.TaskServer, *mockBackend) {
 	return s, b
 }
 
-func item(id, title string) map[string]types.AttributeValue {
-	return map[string]types.AttributeValue{
-		"id":          &types.AttributeValueMemberS{Value: id},
-		"title":       &types.AttributeValueMemberS{Value: title},
-		"description": &types.AttributeValueMemberS{Value: ""},
-		"status":      &types.AttributeValueMemberS{Value: "pending"},
-		"created_at":  &types.AttributeValueMemberS{Value: "2026-01-01T00:00:00Z"},
-		"updated_at":  &types.AttributeValueMemberS{Value: "2026-01-01T00:00:00Z"},
+func itemMap(id, title string) map[string]interface{} {
+	return map[string]interface{}{
+		"id":          id,
+		"title":       title,
+		"description": "",
+		"status":      "pending",
+		"created_at":  "2026-01-01T00:00:00Z",
+		"updated_at":  "2026-01-01T00:00:00Z",
 	}
 }
 
@@ -78,9 +77,20 @@ func item(id, title string) map[string]types.AttributeValue {
 
 func TestHealthCheck_ReturnsServing(t *testing.T) {
 	s := server.NewTaskServer(zerolog.Nop())
+	// Register a backend so health check returns SERVING
+	b := &mockBackend{}
+	s.RegisterBackend("aws", b)
 	resp, err := s.HealthCheck(context.Background(), &taskpb.HealthCheckRequest{})
 	require.NoError(t, err)
 	assert.Equal(t, taskpb.ServingStatus_SERVING, resp.Status)
+}
+
+func TestHealthCheck_NoBackends(t *testing.T) {
+	s := server.NewTaskServer(zerolog.Nop())
+	// No backends registered
+	resp, err := s.HealthCheck(context.Background(), &taskpb.HealthCheckRequest{})
+	require.NoError(t, err)
+	assert.Equal(t, taskpb.ServingStatus_NOT_SERVING, resp.Status)
 }
 
 // ---- Unknown cloud backend (InvalidArgument) ----------------------------
@@ -122,7 +132,7 @@ func TestDeleteTask_UnknownCloud(t *testing.T) {
 
 func TestGetTask_Success(t *testing.T) {
 	s, b := newServerWithMock(t)
-	b.On("Get", mock.Anything, "task-1").Return(item("task-1", "My Task"), nil)
+	b.On("Get", mock.Anything, "task-1").Return(itemMap("task-1", "My Task"), nil)
 
 	resp, err := s.GetTask(context.Background(), &taskpb.GetTaskRequest{TaskId: "task-1", Cloud: "aws"})
 	require.NoError(t, err)
@@ -158,7 +168,7 @@ func TestGetTask_InternalError(t *testing.T) {
 
 func TestCreateTask_Success(t *testing.T) {
 	s, b := newServerWithMock(t)
-	b.On("Create", mock.Anything, mock.AnythingOfType("map[string]types.AttributeValue")).Return(nil)
+	b.On("Create", mock.Anything, mock.AnythingOfType("map[string]interface {}")).Return(nil)
 
 	resp, err := s.CreateTask(context.Background(), &taskpb.CreateTaskRequest{
 		Title:       "New Task",
@@ -174,7 +184,7 @@ func TestCreateTask_Success(t *testing.T) {
 
 func TestCreateTask_InternalError(t *testing.T) {
 	s, b := newServerWithMock(t)
-	b.On("Create", mock.Anything, mock.AnythingOfType("map[string]types.AttributeValue")).Return(errors.New("write error"))
+	b.On("Create", mock.Anything, mock.AnythingOfType("map[string]interface {}")).Return(errors.New("write error"))
 
 	_, err := s.CreateTask(context.Background(), &taskpb.CreateTaskRequest{Title: "t", Cloud: "aws"})
 	require.Error(t, err)
@@ -187,9 +197,9 @@ func TestCreateTask_InternalError(t *testing.T) {
 
 func TestQueryTasks_Success(t *testing.T) {
 	s, b := newServerWithMock(t)
-	items := []map[string]types.AttributeValue{
-		item("task-1", "Task One"),
-		item("task-2", "Task Two"),
+	items := []map[string]interface{}{
+		itemMap("task-1", "Task One"),
+		itemMap("task-2", "Task Two"),
 	}
 	b.On("Query", mock.Anything).Return(items, nil)
 
@@ -201,7 +211,7 @@ func TestQueryTasks_Success(t *testing.T) {
 
 func TestQueryTasks_Empty(t *testing.T) {
 	s, b := newServerWithMock(t)
-	b.On("Query", mock.Anything).Return([]map[string]types.AttributeValue{}, nil)
+	b.On("Query", mock.Anything).Return([]map[string]interface{}{}, nil)
 
 	resp, err := s.QueryTasks(context.Background(), &taskpb.QueryTasksRequest{Cloud: "aws"})
 	require.NoError(t, err)

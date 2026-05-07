@@ -64,22 +64,34 @@ func newTestClient(t *testing.T, m *mockDynamoDBAPI) *awssidecar.DynamoDBClient 
 	return awssidecar.NewDynamoDBClientFromAPI(m, "test-table", logger)
 }
 
+func avItem(id, title string) map[string]types.AttributeValue {
+	return map[string]types.AttributeValue{
+		"id":     &types.AttributeValueMemberS{Value: id},
+		"title":  &types.AttributeValueMemberS{Value: title},
+	}
+}
+
+func ifaceItem(id, title string) map[string]interface{} {
+	return map[string]interface{}{
+		"id":    id,
+		"title": title,
+	}
+}
+
 // ---- Get ----------------------------------------------------------------
 
 func TestGet_Success(t *testing.T) {
 	m := &mockDynamoDBAPI{}
 	client := newTestClient(t, m)
 
-	item := map[string]types.AttributeValue{
-		"id":    &types.AttributeValueMemberS{Value: "task-1"},
-		"title": &types.AttributeValueMemberS{Value: "My Task"},
-	}
+	item := avItem("task-1", "My Task")
 	m.On("GetItem", mock.Anything, mock.AnythingOfType("*dynamodb.GetItemInput")).
 		Return(&dynamodb.GetItemOutput{Item: item}, nil)
 
 	got, err := client.Get(context.Background(), "task-1")
 	require.NoError(t, err)
-	assert.Equal(t, item, got)
+	assert.Equal(t, "task-1", got["id"])
+	assert.Equal(t, "My Task", got["title"])
 	m.AssertExpectations(t)
 }
 
@@ -116,10 +128,7 @@ func TestCreate_Success(t *testing.T) {
 	m := &mockDynamoDBAPI{}
 	client := newTestClient(t, m)
 
-	item := map[string]types.AttributeValue{
-		"id":    &types.AttributeValueMemberS{Value: "task-2"},
-		"title": &types.AttributeValueMemberS{Value: "New Task"},
-	}
+	item := ifaceItem("task-2", "New Task")
 	m.On("PutItem", mock.Anything, mock.AnythingOfType("*dynamodb.PutItemInput")).
 		Return(&dynamodb.PutItemOutput{}, nil)
 
@@ -136,9 +145,7 @@ func TestCreate_APIError(t *testing.T) {
 	m.On("PutItem", mock.Anything, mock.AnythingOfType("*dynamodb.PutItemInput")).
 		Return(nil, apiErr)
 
-	item := map[string]types.AttributeValue{
-		"id": &types.AttributeValueMemberS{Value: "task-3"},
-	}
+	item := ifaceItem("task-3", "Task")
 	err := client.Create(context.Background(), item)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "failed to put item")
@@ -152,8 +159,8 @@ func TestQuery_Success(t *testing.T) {
 	client := newTestClient(t, m)
 
 	items := []map[string]types.AttributeValue{
-		{"id": &types.AttributeValueMemberS{Value: "task-1"}},
-		{"id": &types.AttributeValueMemberS{Value: "task-2"}},
+		avItem("task-1", "Task One"),
+		avItem("task-2", "Task Two"),
 	}
 	m.On("Scan", mock.Anything, mock.AnythingOfType("*dynamodb.ScanInput")).
 		Return(&dynamodb.ScanOutput{Items: items}, nil)
