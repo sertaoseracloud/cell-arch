@@ -10,11 +10,10 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"github.com/yourorg/cell-arch/pkg/shutdown"
 )
 
 func main() {
@@ -22,7 +21,7 @@ func main() {
 	logger := initLogger()
 
 	// 2. Root context cancelled on OS signals (D-04: graceful shutdown).
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	ctx, stop := shutdown.Graceful(context.Background(), logger)
 	defer stop()
 
 	if err := run(ctx, logger); err != nil {
@@ -52,7 +51,7 @@ func run(ctx context.Context, logger zerolog.Logger) error {
 
 	// 4. Block until the OS sends SIGINT or SIGTERM.
 	<-ctx.Done()
-	c.logger.Info().Msg("shutdown signal received, stopping…")
+	c.logger.Info().Msg("shutdown complete")
 
 	return nil
 }

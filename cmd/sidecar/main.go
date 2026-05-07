@@ -12,14 +12,13 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/yourorg/cell-arch/internal/config"
 	sidecaraws "github.com/yourorg/cell-arch/internal/sidecar/aws"
 	sidecarazure "github.com/yourorg/cell-arch/internal/sidecar/azure"
+	"github.com/yourorg/cell-arch/pkg/shutdown"
 	"google.golang.org/grpc"
 )
 
@@ -28,7 +27,7 @@ func main() {
 	logger := initLogger()
 
 	// 2. Root context cancelled on OS signals (D-04).
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	ctx, stop := shutdown.Graceful(context.Background(), logger)
 	defer stop()
 
 	if err := run(ctx, logger); err != nil {
