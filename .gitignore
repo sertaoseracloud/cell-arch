@@ -1,0 +1,76 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.bin
+*.out
+*.a
+*.lib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Dependency directories (remove the comment below to ignore it)
+# vendor/
+
+# Go workspace file
+go.work
+go.work.sum
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Directory for data files
+data
+data-*
+data/*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Build output
+bin/
+dist/
+
+# Testing
+.coverage
+*.coverprofile
+
+# Profiling
+*.pprof
+
+# Docker
+.dockerignore
+
+# Planners, documentation generators, etc.
+.planning
+.claude/
+openclaude
+openclaude*
