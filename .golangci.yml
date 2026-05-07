@@ -1,0 +1,35 @@
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    - govet
+    - staticcheck
+    - errcheck
+    - ineffassign
+    - unused
+    - gofmt
+    - gosimple
+    - godot
+    - noctx
+    - contextcheck
+
+linters-settings:
+  govet:
+    enable-all: true
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+
+issues:
+  exclude-rules:
+    # Allow context.Background() in test files (test helpers)
+    - path: "_test\\.go"
+      linters:
+        - noctx
+
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true

@@ -69,8 +69,3 @@ dist/
 # Docker
 .dockerignore
 
-# Planners, documentation generators, etc.
-.planning
-.claude/
-openclaude
-openclaude*
