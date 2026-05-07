@@ -2,11 +2,11 @@
 phase: 3
 slug: terraform-infrastructure
 status: issues_found
-files_reviewed: 9
+files_reviewed: 12
 critical: 0
 warning: 1
-info: 3
-total: 4
+info: 5
+total: 6
 created: 2026-05-07
 ---
 
@@ -66,6 +66,24 @@ created: 2026-05-07
 **Line:** 62
 
 **Note:** `subject = "system:serviceaccount:default:${var.service_account_name}"` assumes `namespace = "default"`. If namespace changes, this will break. Consider adding a `namespace` variable.
+
+---
+
+### INFO-04 — DynamoDB table attributes hard-coded (Info)
+
+**File:** `infra/modules/aws-dynamodb/main.tf`  
+**Lines:** 13-20
+
+**Note:** `attribute` blocks for `hash_key` and `range_key` are hard-coded as type "S". Consider making the attribute type configurable via variables for future flexibility.
+
+---
+
+### INFO-05 — CosmosDB geo_location single-region (Info)
+
+**File:** `infra/modules/azure-cosmosdb/main.tf`  
+**Lines:** 23-26
+
+**Note:** Only one `geo_location` block with `failover_priority = 0` (single-region). For production, consider adding multi-region writes or at least a read-region with `failover_priority = 1`.
 
 ---
 
