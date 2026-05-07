@@ -1,173 +1,117 @@
+// Package main is the entry point for the cell-arch sidecar proxy.
+// The sidecar holds all cloud SDK credentials and exposes a unified
+// gRPC API on localhost:50051 for the main app to consume.
+//
+// Phase 2 will wire the full gRPC server with protobuf-generated handlers.
+// This Phase 1 skeleton establishes the graceful-shutdown pattern (D-04),
+// structured logging (D-08), and manual constructor wiring (D-02).
 package main
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-	pb "github.com/yourorg/cell-arch/proto"
-	"google.golang.org/grpc/health"
-	"google.golang.org/grpc/health/grpc_health_v1"
-
 	"github.com/rs/zerolog"
-
+	"github.com/rs/zerolog/log"
+	"github.com/yourorg/cell-arch/internal/config"
 	sidecaraws "github.com/yourorg/cell-arch/internal/sidecar/aws"
 	sidecarazure "github.com/yourorg/cell-arch/internal/sidecar/azure"
+	"google.golang.org/grpc"
 )
 
-type server struct {
-	pb.UnimplementedTaskServiceServer
-	health      *health.Server
-	awsClient   *aws.DynamoDBClient
-	azureClient *azure.CosmosDBClient
-	logger      zerolog.Logger
+func main() {
+	// 1. Initialise the structured logger.
+	logger := initLogger()
+
+	// 2. Root context cancelled on OS signals (D-04).
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	if err := run(ctx, logger); err != nil {
+		logger.Fatal().Err(err).Msg("sidecar error")
+		os.Exit(1)
+	}
+	logger.Info().Msg("sidecar stopped gracefully")
 }
 
-func main() {
-	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer cancel()
-
-	// Initialize structured logger
-	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
-
-	certFile := os.Getenv("TLS_CERT")
-	keyFile := os.Getenv("TLS_KEY")
-
-	creds, err := credentials.NewServerTLSFromFile(certFile, keyFile)
+// run contains the main sidecar logic.
+func run(ctx context.Context, logger zerolog.Logger) error {
+	// 3. Load typed configuration.
+	cfg, err := config.LoadSidecarConfig(ctx)
 	if err != nil {
-		logger.Error().Err(err).Msg("Failed to load TLS cert")
-		os.Exit(1)
+		return fmt.Errorf("load sidecar config: %w", err)
 	}
 
-	lis, err := net.Listen("tcp", ":50051")
+	// 4. Initialise AWS client (IRSA — no static credentials).
+	awsClient, err := sidecaraws.NewDynamoDBClient(
+		ctx,
+		cfg.AWSRegion,
+		cfg.DynamoDBTable,
+		logger,
+	)
 	if err != nil {
-		logger.Error().Err(err).Msg("Failed to listen")
-		os.Exit(1)
+		return fmt.Errorf("create AWS DynamoDB client: %w", err)
 	}
+	_ = awsClient // Phase 2 will register gRPC handlers
 
-	// Initialize AWS client (IRSA - no static credentials)
-	awsClient, err := sidecaraws.NewDynamoDBClient(ctx, os.Getenv("AWS_REGION"), os.Getenv("DYNAMODB_TABLE"), logger)
+	// 5. Initialise Azure client (Workload Identity — no static credentials).
+	azureClient, err := sidecarazure.NewCosmosDBClient(
+		ctx,
+		cfg.AzureCosmosEndpoint,
+		cfg.CosmosDatabase,
+		cfg.CosmosContainer,
+		logger,
+	)
 	if err != nil {
-		logger.Error().Err(err).Msg("Failed to create AWS client")
-		os.Exit(1)
+		return fmt.Errorf("create Azure CosmosDB client: %w", err)
 	}
+	_ = azureClient // Phase 2 will register gRPC handlers
 
-	// Initialize Azure client (Workload Identity - no static credentials)
-	azureClient, err := sidecarazure.NewCosmosDBClient(ctx, os.Getenv("AZURE_COSMOS_ENDPOINT"), os.Getenv("COSMOS_DATABASE"), os.Getenv("COSMOS_CONTAINER"), logger)
+	// 6. Start gRPC listener.
+	addr := fmt.Sprintf(":%d", cfg.GRPCPort)
+	lis, err := net.Listen("tcp", addr)
 	if err != nil {
-		logger.Error().Err(err).Msg("Failed to create Azure client")
-		os.Exit(1)
+		return fmt.Errorf("listen %s: %w", addr, err)
 	}
 
-	grpcServer := grpc.NewServer(grpc.Creds(creds))
-	srv := &server{
-		health:      health.NewServer(),
-		awsClient:   awsClient,
-		azureClient: azureClient,
-		logger:      logger,
-	}
-	pb.RegisterTaskServiceServer(grpcServer, srv)
-	grpc_health_v1.RegisterHealthServer(grpcServer, srv.health)
+	// Phase 1: plain gRPC server (no TLS until cert-manager is configured in Phase 5).
+	// Phase 2 will add mTLS via grpc.Creds.
+	grpcServer := grpc.NewServer()
 
-	fmt.Println("Starting sidecar on :50051 with mTLS")
-	srv.health.SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)
+	// Phase 2 TODO: register TaskServiceServer handler here.
 
+	logger.Info().Str("addr", addr).Msg("sidecar starting")
+
+	// 7. Serve in background; cancel on context cancellation.
+	errCh := make(chan error, 1)
 	go func() {
-		<-ctx.Done()
-		grpcServer.GracefulStop()
+		if err := grpcServer.Serve(lis); err != nil {
+			errCh <- fmt.Errorf("grpc serve: %w", err)
+		}
+		close(errCh)
 	}()
 
-	if err := grpcServer.Serve(lis); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to serve: %v\n", err)
-		os.Exit(1)
+	// 8. Block until OS signal or serve error.
+	select {
+	case <-ctx.Done():
+		logger.Info().Msg("shutdown signal received, draining connections…")
+		grpcServer.GracefulStop()
+		return <-errCh
+	case err := <-errCh:
+		return err
 	}
 }
 
-func (s *server) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.GetTaskResponse, error) {
-	// Route based on cloud field
-	switch req.Cloud {
-	case "aws":
-		// Call AWS DynamoDB
-		item, err := s.awsClient.Get(ctx, req.TaskId)
-		if err != nil {
-			return nil, MapAWSError(err)
-		}
-		// Convert item to Task
-		task := &pb.Task{
-			Id:    req.TaskId,
-			Title: "from aws",
-		}
-		return &pb.GetTaskResponse{Task: task}, nil
-	case "azure":
-		// Call Azure CosmosDB
-		item, err := s.azureClient.Get(ctx, req.TaskId)
-		if err != nil {
-			return nil, MapAzureError(err)
-		}
-		task := &pb.Task{
-			Id:    req.TaskId,
-			Title: "from azure",
-		}
-		return &pb.GetTaskResponse{Task: task}, nil
-	default:
-		return nil, status.Errorf(codes.InvalidArgument, "unsupported cloud: %s", req.Cloud)
+// initLogger creates a zerolog.Logger appropriate for the runtime environment.
+func initLogger() zerolog.Logger {
+	if os.Getenv("APP_ENV") == "production" {
+		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+		return zerolog.New(os.Stdout).With().Timestamp().Logger()
 	}
-}
-
-func (s *server) CreateTask(ctx context.Context, req *pb.CreateTaskRequest) (*pb.CreateTaskResponse, error) {
-	// Route based on cloud field
-	switch req.Cloud {
-	case "aws":
-		// Call AWS DynamoDB
-		item := map[string]interface{}{
-			"id":    req.Task.Id,
-			"title": req.Task.Title,
-		}
-		err := s.awsClient.Create(ctx, req.Task.Id, item)
-		if err != nil {
-			return nil, MapAWSError(err)
-		}
-		return &pb.CreateTaskResponse{Success: true}, nil
-	case "azure":
-		// Call Azure CosmosDB
-		item := map[string]interface{}{
-			"id":    req.Task.Id,
-			"title": req.Task.Title,
-		}
-		err := s.azureClient.Create(ctx, req.Task.Id, item)
-		if err != nil {
-			return nil, MapAzureError(err)
-		}
-		return &pb.CreateTaskResponse{Success: true}, nil
-	default:
-		return nil, status.Errorf(codes.InvalidArgument, "unsupported cloud: %s", req.Cloud)
-	}
-}
-
-func (s *server) QueryTasks(ctx context.Context, req *pb.QueryTasksRequest) (*pb.QueryTasksResponse, error) {
-	return &pb.QueryTasksResponse{}, nil
-}
-
-func (s *server) DeleteTask(ctx context.Context, req *pb.DeleteTaskRequest) (*pb.DeleteTaskResponse, error) {
-	return &pb.DeleteTaskResponse{Success: true}, nil
-}
-
-func (s *server) HealthCheck(ctx context.Context, req *pb.HealthCheckRequest) (*pb.HealthCheckResponse, error) {
-	// Check if clients are initialized
-	if s.awsClient == nil || s.azureClient == nil {
-		return &pb.HealthCheckResponse{
-			Status:  "UNHEALTHY",
-			Message: "Clients not initialized",
-		}, nil
-	}
-	return &pb.HealthCheckResponse{
-		Status:  "SERVING",
-		Message: "All systems operational",
-	}, nil
+	return log.Output(zerolog.ConsoleWriter{Out: os.Stdout, NoColor: false}).
+		With().Timestamp().Logger()
 }
