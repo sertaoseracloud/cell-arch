@@ -1,0 +1,19 @@
+# sidecar.yaml — configuration file for the cell-arch sidecar proxy (D-16).
+# Environment variables override these values at runtime.
+
+grpc_port: 50051
+
+# mTLS certificate paths (D-15). Populated by cert-manager / Secret Store CSI Driver in Kubernetes.
+tls_cert: ""
+tls_key: ""
+tls_ca_cert: ""
+
+# AWS configuration (IRSA — no static credentials, D-10).
+aws_endpoint: ""
+region: "us-east-1"
+dynamodb_table: "tasks"
+
+# Azure configuration (Workload Identity — no static credentials, D-10).
+azure_endpoint: ""
+cosmos_database: "tasks"
+cosmos_container: "tasks"
