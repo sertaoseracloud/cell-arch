@@ -1,6 +1,6 @@
 module github.com/yourorg/cell-arch
 
-go 1.23.0
+go 1.25.0
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.11.0
