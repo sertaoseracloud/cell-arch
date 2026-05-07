@@ -8,7 +8,12 @@ output "spoke_vnet_id" {
   value       = azurerm_virtual_network.spoke.id
 }
 
-output "spoke_private_subnet_ids" {
-  description = "Private subnet IDs in the Spoke VNet — passed to azure-aks module"
-  value       = [azurerm_subnet.spoke_private_a.id, azurerm_subnet.spoke_private_b.id]
+output "aks_subnet_id" {
+  description = "AKS subnet ID"
+  value       = azurerm_subnet.aks.id
+}
+
+output "privatelink_subnet_id" {
+  description = "Private endpoint subnet ID"
+  value       = azurerm_subnet.privatelink.id
 }

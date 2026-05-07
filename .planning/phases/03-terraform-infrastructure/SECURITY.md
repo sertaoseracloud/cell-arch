@@ -65,6 +65,13 @@
 
 ---
 
+## Security Audit (2026-05-07) — Waves 1 & 2
+
+| Wave | Auditor | Threats | Mitigated | Accepted | Open |
+|------|----------|---------|-----------|---------|------|
+| 1 | gsd-security-auditor | T-03-01-01 → T-03-02-04 | 5 | 2 | 0 |
+| 2 | gsd-security-auditor | T-03-03-01 → T-03-04-02 | 6 | 0 | 0 |
+
 ## Verdict
 
 **PASS (with 2 accepted risks)**
@@ -73,4 +80,4 @@ Two threats are accepted as necessary for PoC functionality:
 1. **T-03-01-04**: NAT Gateway public IP — required for outbound egress, inbound not possible
 2. **T-03-02-03**: Large AKS subnet — required for pod IPs, no security impact
 
-All other threats (19/21) are fully mitigated in Terraform code. No critical or high-severity unmitigated threats remain in Phase 3 infrastructure.
+All other threats (19/21) are fully mitigated in Terraform code. No critical or high-severity unmitigated threats remain in Phase 3 infrastructure (Waves 1‑2).

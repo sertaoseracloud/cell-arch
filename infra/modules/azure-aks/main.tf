@@ -7,14 +7,6 @@ terraform {
   }
 }
 
-# ── Default Node Pool Subnet (for pod / service CIDR) ─────────────
-
-data "azurerm_subnet" "spoke_private_a" {
-  name                 = element(var.private_subnet_ids, 0)
-  virtual_network_name = split("/", element(var.private_subnet_ids, 0))[4]  # crude but works; use locals in real impl
-  resource_group_name  = split("/", element(var.private_subnet_ids, 0))[3]
-}
-
 # ── User Assigned Identity for AKS ────────────────────────────────
 
 resource "azurerm_user_assigned_identity" "aks" {
@@ -36,7 +28,7 @@ resource "azurerm_kubernetes_cluster" "main" {
     name            = "default"
     node_count      = var.node_count
     vm_size         = "Standard_D2s_v3"
-    vnet_subnet_id = data.azurerm_subnet.spoke_private_a.id
+    vnet_subnet_id = element(var.private_subnet_ids, 0)
     zones           = ["1", "2", "3"]
   }
 
