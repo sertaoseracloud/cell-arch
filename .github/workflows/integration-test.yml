@@ -1,0 +1,41 @@
+name: Integration Tests
+
+on:
+  workflow_run:
+    workflows: ["CI", "Security Scan"]
+    types: [completed]
+  pull_request:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  integration-test:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker
+        uses: docker/setup-docker-action@v3
+      - name: Start LocalStack
+        run: |
+          docker run -d --name localstack -p 4566:4566 -e SERVICES=dynamodb localstack/localstack:2.0
+      - name: Start CosmosDB Emulator
+        run: |
+          docker run -d --name cosmosdb -p 8081:8081 \
+            mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      - name: Run integration tests
+        run: go test ./test/integration/... -run TestIntegration -count=1
+        env:
+          AWS_ENDPOINT_URL: http://localhost:4566
+          AZURE_COSMOS_EMULATOR: http://localhost:8081
+      - name: Stop containers
+        if: always()
+        run: |
+          docker stop localstack cosmosdb || true
+          docker rm localstack cosmosdb || true
