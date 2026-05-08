@@ -10,8 +10,8 @@
 
 ## Current Position
 - **Phase**: 4 — Observability
-- **Plan**: Phase 4 complete — All 5 plans done
-- **Status**: Phase 3 complete — Ready for Phase 4
+- **Plan**: Phase 5 discussion complete — Locked decisions ready for planning
+- **Status**: Phase 5 discussion complete — Ready for Phase 5 planning
 - **Progress**: ██████████████ 80%
 
 ## Performance Metrics
@@ -19,6 +19,7 @@
 |--------|-------|
 | Phases complete | 4 / 5 |
 | Plans complete | 19 / 28 |
+| Discussions complete | 5 / 5 |
 | Requirements met | 20 / 37 |
 | Test coverage | 100% (usecase, config, pkg) / 85% (sidecar) |
 | Phase 2 duration | ~30m |
