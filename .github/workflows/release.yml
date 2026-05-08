@@ -1,0 +1,103 @@
+name: Release Pipeline
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        arch: [amd64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      - name: Build binary
+        run: |
+          go build -o cell-arch-${{ matrix.os }}-${{ matrix.arch }} ./cmd/app
+          go build -o sidecar-${{ matrix.os }}-${{ matrix.arch }} ./cmd/sidecar
+          go build -o obs-sidecar-${{ matrix.os }}-${{ matrix.arch }} ./cmd/obs-sidecar
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries-${{ matrix.os }}-${{ matrix.arch }}
+          path: |
+            cell-arch-*
+            sidecar-*
+            obs-sidecar-*
+
+  sign-binaries:
+    needs: [build-release]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: ./
+      - name: Install cosign
+        uses: sigstore/cosign-installer@main
+        with:
+          cosign-release: 'v2.0.0'
+      - name: Sign binaries with OIDC
+        env:
+          COSIGN_EXPERIMENTAL: 1
+        run: |
+          cosign sign --yes --oidc-provider=github-actions \
+            --identity-token ${{ steps.auth.outputs.id_token }} \
+            ./cell-arch-* ./sidecar-* ./obs-sidecar-*
+
+  trivy-sbom:
+    needs: [build-release]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Trivy SBOM
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'ghcr.io/${{ github.repository }}/cell-arch:${{ github.sha }}'
+          format: 'cyclonedx'
+          output: 'sbom.json'
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.json
+
+  tfsec-apply:
+    needs: [build-release, sign-binaries, trivy-sbom]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }}
+          role-session-name: ReleaseTerraform
+          aws-region: us-east-1
+      - name: Terraform init & apply
+        run: |
+          cd infra && terraform init
+          terraform apply -auto-approve
+        env:
+          AWS_ACCESS_KEY_ID: ${{ steps.aws-login.outputs.aws-access-key-id }}
+          AWS_SECRET_ACCESS_KEY: ${{ steps.aws-login.outputs.aws-secret-access-key }}
+          AWS_SESSION_TOKEN: ${{ steps.aws-login.outputs.aws-session-token }}
+
+  cleanup:
+    needs: [tfsec-apply]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cleanup
+        run: echo "Release pipeline completed. Cleanup done."
