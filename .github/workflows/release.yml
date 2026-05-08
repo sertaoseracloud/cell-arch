@@ -41,6 +41,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Get OIDC token
+        id: auth
+        uses: actions/github-script@v6
+        with:
+          script: return { id_token: await core.getIDToken() }
       - name: Download binaries
         uses: actions/download-artifact@v4
         with:
@@ -89,10 +94,6 @@ jobs:
         run: |
           cd infra && terraform init
           terraform apply -auto-approve
-        env:
-          AWS_ACCESS_KEY_ID: ${{ steps.aws-login.outputs.aws-access-key-id }}
-          AWS_SECRET_ACCESS_KEY: ${{ steps.aws-login.outputs.aws-secret-access-key }}
-          AWS_SESSION_TOKEN: ${{ steps.aws-login.outputs.aws-session-token }}
 
   cleanup:
     needs: [tfsec-apply]
