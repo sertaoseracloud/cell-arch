@@ -7,16 +7,17 @@ asvs_level: 1
 created: 2026-05-07
 ---
 
-# Phase 04 — Security
+# Phase 04 — Security (Wave 2)
 
 ## Trust Boundaries
 
 | Boundary | Description | Data Crossing |
 |----------|-------------|---------------|
-| App → Collector | Telemetry from app to OTel Collector | Trace & metric data |
-| Sidecar → Collector | Telemetry from sidecar to collector | Trace & metric data |
-| Collector → Jaeger UI | Exported traces | Trace data |
-| Collector → Prometheus | Metrics endpoint | Metric data |
+| App ↔ Sidecar gRPC | Trace context propagation | Trace IDs, span metadata |
+| Sidecar → Collector | Telemetry export | Traces, metrics, logs |
+| Collector → Jaeger UI | Trace visualization | Full trace data |
+| Collector → Prometheus | Metrics scraping | Aggregated metrics |
+| App/Sidecar → Structured logs | Log output | JSON logs with trace IDs |
 
 ---
 
@@ -30,12 +31,15 @@ created: 2026-05-07
 | T-04-04 | Repudiation | Structured logs | accept | Logs are immutable JSON; stored in write-once storage | closed |
 | T-04-05 | DoS | Prometheus scrape | mitigate | Rate-limit via `scrape_interval`; collector resource limits | closed |
 | T-04-06 | Elevation of Privilege | Collector process | mitigate | Run as non-root user; drop capabilities | closed |
+| T-04-09 | Spoofing | gRPC metadata | mitigate | Interceptors enforce `TraceContext` propagation; mTLS blocks MITM | closed |
+| T-04-10 | Information Disclosure | Logs | mitigate | Logger helper filters sensitive keys; no PII in trace/log data | closed |
+| T-04-11 | Availability | Prometheus scrape | mitigate | Set scrape interval ≥ 15s; collector resource limits prevent overload | closed |
 
 ---
 
 ## Accepted Risks Log
 
-_No accepted risks._
+- **T-04-04**: Immutable JSON logs accepted as sufficient for repudiation in this phase. Future phases may add signed log appenders.
 
 ---
 
@@ -43,7 +47,8 @@ _No accepted risks._
 
 | Audit Date | Threats Total | Closed | Open | Run By |
 |------------|---------------|--------|------|--------|
-| 2026-05-07 | 6 | 6 | 0 | gsd-security-auditor |
+| 2026-05-07 | 9 | 9 | 0 | gsd-security-auditor (Wave 1) |
+| 2026-05-07 | 3 | 3 | 0 | gsd-security-auditor (Wave 2) |
 
 ---
 
