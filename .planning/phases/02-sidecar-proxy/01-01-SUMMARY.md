@@ -92,6 +92,7 @@ Phase 2 Plan 01 delivers the foundational gRPC sidecar server scaffold:
 ### Auto-fixed Issues
 
 **1. [Rule 3 - Blocking] protoc not available — hand-wrote proto stubs with JSON codec**
+
 - **Found during:** Task 1
 - **Issue:** `protoc` binary is not installed in the build environment; the plan said to run `protoc --go_out=. --go-grpc_out=. proto/task.proto` which would fail
 - **Fix:** Wrote `task.pb.go` and `task_grpc.pb.go` manually with idiomatic `grpc.ServiceDesc` pattern; added `codec.go` registering a JSON codec under name `"proto"` so plain Go structs work with gRPC wire transport
@@ -99,13 +100,15 @@ Phase 2 Plan 01 delivers the foundational gRPC sidecar server scaffold:
 - **Commit:** 5e5998e
 
 **2. [Rule 2 - Missing coverage] Added config package tests to meet 80% threshold**
+
 - **Found during:** Task 4 (`go test ./...` showed `[no test files]` for config package)
-- **Issue:** Hardness constraint requires ≥80% coverage for sidecar adapter layer; config package had 0% coverage
+- **Issue:** Harness constraint requires ≥80% coverage for sidecar adapter layer; config package had 0% coverage
 - **Fix:** Created `internal/sidecar/config/config_test.go` with 6 tests covering defaults, YAML parse, env overrides, invalid YAML, read error, and Azure endpoint overrides
 - **Files modified:** `internal/sidecar/config/config_test.go`
 - **Commit:** 161d877
 
 **3. [Rule 1 - Bug] Fixed cross-platform test for unreadable file**
+
 - **Found during:** Task 4 test run
 - **Issue:** Initial test used `os.Chmod(file, 0o000)` which is ignored on Windows; test failed because file was still readable
 - **Fix:** Replaced with pointing `SIDECAR_CONFIG` at a directory path — `os.ReadFile` on a directory fails on all platforms

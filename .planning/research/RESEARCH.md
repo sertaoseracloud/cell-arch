@@ -55,11 +55,11 @@
 ## Recommendations
 
 1. **Adopt the sidecar abstraction** as the single source of truth for cloud interactions. It satisfies the *Sidecar-Abstraction* spec and enforces zero-leakage of SDKs into core business code.
-2. **Standardize on OpenTelemetry** for tracing, metrics, and logs. Export both to AWS X-Ray and Azure Monitor via a unified collector - this aligns with the *Observability-Stack* and *Observability-Rigor* hardness specifications.
-3. **Leverage provider-native IAM federation** (IRSA & Azure Workload Identity) to meet the *Security-Compliance* and *Cross-Cloud-Resilience* hardness requirements while avoiding secret sprawl.
+2. **Standardize on OpenTelemetry** for tracing, metrics, and logs. Export both to AWS X-Ray and Azure Monitor via a unified collector - this aligns with the *Observability-Stack* and *Observability-Rigor* Harness specifications.
+3. **Leverage provider-native IAM federation** (IRSA & Azure Workload Identity) to meet the *Security-Compliance* and *Cross-Cloud-Resilience* Harness requirements while avoiding secret sprawl.
 4. **Implement Terraform modules per the *Terraform-Standards* spec** - keep modules isolated, versioned, and tag-rich to simplify governance and future extension to additional clouds.
-5. **Validate performance targets early** - use `testcontainers-go` with LocalStack and Cosmos Emulator to benchmark sidecar latency (<5ms) and throughput (>=1000 rps reads, 500 rps writes) as defined in the *Performance-Targets* hardness file.
-6. **Integrate chaos engineering** (network partitions, service outages) into CI pipeline per the *Resilience* hardness spec to ensure circuit-breaker behavior and automated rollback.
+5. **Validate performance targets early** - use `testcontainers-go` with LocalStack and Cosmos Emulator to benchmark sidecar latency (<5ms) and throughput (>=1000 rps reads, 500 rps writes) as defined in the *Performance-Targets* Harness file.
+6. **Integrate chaos engineering** (network partitions, service outages) into CI pipeline per the *Resilience* Harness spec to ensure circuit-breaker behavior and automated rollback.
 
 ---
 
@@ -76,9 +76,9 @@
 - .claude/specs/technical/iam-federation.md
 - .claude/specs/well-architected/aws-pillars.md
 - .claude/specs/well-architected/azure-pillars.md
-- .claude/hardness/performance-targets.md
-- .claude/hardness/cross-cloud-resilience.md
-- .claude/hardness/observability-rigor.md
-- .claude/hardness/security-compliance.md
-- .claude/hardness/test-coverage-thresholds.md
-- .claude/hardness/cicd-rigor.md
+- .claude/harness/performance-targets.md
+- .claude/harness/cross-cloud-resilience.md
+- .claude/harness/observability-rigor.md
+- .claude/harness/security-compliance.md
+- .claude/harness/test-coverage-thresholds.md
+- .claude/harness/cicd-rigor.md

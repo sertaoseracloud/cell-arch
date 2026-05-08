@@ -25,7 +25,7 @@ decisions:
   - HealthCheck checks backend registration count, not cloud connectivity (lightweight, D-14)
   - Test certificates generated in-memory to avoid file system dependencies
   - DynamoDB client tests updated to mock DynamoDBAPI interface (D-17)
-  - All sidecar packages target ≥80% coverage (hardness constraint)
+  - All sidecar packages target ≥80% coverage (Harness constraint)
 metrics:
   duration: ~10m
   completed_date: "2026-05-07"
@@ -76,12 +76,14 @@ Phase 2 Plan 05 delivers health monitoring and test coverage:
 ### Auto-fixed Issues
 
 **1. [Rule 2 - Coverage] DynamoDB client tests needed update**
+
 - **Found during:** Testing
 - **Issue:** Plan's test examples used `types.AttributeValue`; interface refactored to generic in Plan 03
 - **Fix:** Rewrote `dynamodb_client_test.go` with proper mocking of `DynamoDBAPI` interface
 - **Files modified:** `internal/sidecar/aws/dynamodb_client_test.go`
 
 **2. [Rule 1 - HealthCheck] Plan specified cloud connectivity probes**
+
 - **Found during:** Implementation
 - **Issue:** Plan suggested lightweight connectivity checks (DescribeTable, ReadDatabase); these would require backend calls on every health check
 - **Fix:** HealthCheck checks backend registration instead (lightweight, no cloud calls per D-14)

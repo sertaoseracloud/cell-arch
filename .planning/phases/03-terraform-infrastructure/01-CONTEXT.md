@@ -66,42 +66,51 @@ This phase delivers symmetric Terraform modules that provision private networkin
 </decisions>
 
 <canonical_refs>
+
 ## Canonical References
 
 **Downstream agents MUST read these before planning or implementing.**
 
 ### Project Architecture
+
 - `.planning/ROADMAP.md` — Phase 3 goals, success criteria, 7-plan breakdown
 - `.planning/PROJECT.md` — Symmetric Terraform principle, zero static secrets, landing zone requirements
 - `.planning/REQUIREMENTS.md` — TERR-01 through TERR-08, SECR-01, SECR-02, SECR-03
 
 ### Technical Standards
+
 - `.claude/specs/technical/terraform-standards.md` — Module structure, state backend symmetry, required outputs, mandatory tagging (`project_name`, `managed_by: terraform`, `environment: poc`)
 - `.claude/specs/infrastructure/landing-zones.md` — Hub-Spoke networking topology, Gateway Endpoints (AWS), Private Link (Azure), SCPs / Azure Policy
 - `.claude/specs/infrastructure/secrets-management.md` — Secrets Store CSI Driver configuration
 - `.claude/specs/infrastructure/certificates-and-tls.md` — cert-manager ClusterIssuers for mTLS
 
 ### Prior Phase Context
+
 - `.planning/phases/01-architecture-core-app/01-CONTEXT.md` — Established stack decisions (D-01 through D-08)
 - `.planning/phases/02-sidecar-proxy/01-CONTEXT.md` — IRSA + Workload Identity (D-10), mTLS (D-15), per-request cloud selector (D-12)
 
-### Compliance & Hardness
-- `.claude/hardness/security-rules.md` — No static credentials, private subnets required
-- `.claude/hardness/performance-budgets.md` — Sidecar latency ≤5 ms p95 (infrastructure must not bottleneck)
+### Compliance & Harness
+
+- `.claude/harness/security-rules.md` — No static credentials, private subnets required
+- `.claude/harness/performance-budgets.md` — Sidecar latency ≤5 ms p95 (infrastructure must not bottleneck)
 
 </canonical_refs>
 
 <code_context>
+
 ## Existing Code Insights
 
 ### Reusable Assets
+
 - `infra/` — directory exists but is empty; all Terraform code is greenfield for this phase.
 
 ### Established Patterns
+
 - Symmetric structure: every AWS resource has an Azure equivalent with identical interface (from PROJECT.md + terraform-standards.md).
 - Manual constructors / DI pattern (D-02) applies to Go code in app/sidecar — not directly applicable to Terraform, but the symmetry principle mirrors it.
 
 ### Integration Points
+
 - `cmd/sidecar/main.go` — reads `AWS_REGION`, `DYNAMODB_TABLE`, `AZURE_COSMOS_ENDPOINT`, `COSMOS_DATABASE`, `COSMOS_CONTAINER` from env. Terraform outputs must provide these values.
 - EKS/AKS clusters will host both `cmd/app` and `cmd/sidecar` as Kubernetes Deployments (Phase 4+).
 - cert-manager ClusterIssuer will issue the mTLS certificates that `cmd/sidecar/main.go` loads via `TLS_CERT`/`TLS_KEY` env vars.
@@ -138,11 +147,13 @@ infra/
 ```
 
 ### Required Terraform Outputs per Database Module
+
 - `database_endpoint` — used by sidecar env vars
 - `resource_id` — used for IAM policy attachment
 - `iam_policy_arn` (AWS) / `policy_object_id` (Azure) — attached to IRSA role / Workload Identity
 
 ### State Backend Naming
+
 - AWS S3 bucket: `{project_name}-tfstate-aws-{env}` (e.g., `cell-arch-tfstate-aws-dev`)
 - AWS DynamoDB lock table: `{project_name}-tflock-aws-{env}`
 - Azure Blob container: `{project_name}-tfstate-azure-{env}`

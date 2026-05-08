@@ -1,4 +1,4 @@
-# Hardness: Resiliência Cruzada e Paridade de Erros
+# Harness: Resiliência Cruzada e Paridade de Erros
 
 ## 1. Simulação de Falhas (Chaos Engineering)
 

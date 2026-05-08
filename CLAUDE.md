@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Generate Mocks**: `mockgen -source=internal/domain/repository.go -destination=internal/mocks/repository_mock.go -package=mocks`.
 - **Lint**: `golangci-lint run` (assumes `golangci-lint` is installed).
 - **Format Code**: `go fmt ./...`.
-- **Check Coverage**: `go test -cover ./...` (must meet thresholds defined in `.claude/hardness/test-coverage-thresholds.md`).
+- **Check Coverage**: `go test -cover ./...` (must meet thresholds defined in `.claude/harness/test-coverage-thresholds.md`).
 - **Terraform Init**: `terraform -chdir=infra init` (infra directory contains Terraform code).
 - **Terraform Plan**: `terraform -chdir=infra plan`.
 - **Terraform Apply**: `terraform -chdir=infra apply`.
@@ -55,7 +55,7 @@ repo-root/
 - **Dependency Injection** – All components are wired via constructors; avoid global state or `init()` side effects.
 - **Context Propagation** – Every I/O function receives a `context.Context` as the first argument.
 - **Graceful Shutdown** – Both `cmd/app` and `cmd/sidecar` listen for `SIGINT/SIGTERM` and close resources cleanly.
-- **Hardness Compliance** – Code must satisfy the constraints in `.claude/hardness/` (coverage, performance, security, observability). Tests that fail these checks are considered blocking.
+- **Harness Compliance** – Code must satisfy the constraints in `.claude/harness/` (coverage, performance, security, observability). Tests that fail these checks are considered blocking.
 - **Terraform Standards** – Follow the module layout and naming conventions from `.claude/specs/infrastructure/terraform-standards.md`.
 - **TDD Lifecycle** – Follow the Red‑Green‑Refactor flow described in `.claude/specs/infrastructure/tdd-lifecycle-go.md`.
 

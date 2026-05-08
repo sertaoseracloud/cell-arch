@@ -49,9 +49,11 @@ metrics:
 ## What Was Built
 
 ### TDD RED Phase
+
 - `internal/sidecar/aws/dynamodb_client_test.go`: 10 failing tests covering Get/Create/Query/Delete with mock DynamoDBAPI (success, not-found, API error cases)
 
 ### TDD GREEN Phase (DynamoDB client)
+
 - **DynamoDBAPI interface** extracted in `dynamodb_client.go` — subset of `*dynamodb.Client` methods (GetItem, PutItem, Scan, DeleteItem)
 - **NewDynamoDBClientFromAPI** constructor for test injection without AWS credentials
 - **Query** method added via `Scan` with tableName filter
@@ -60,6 +62,7 @@ metrics:
 - **NewDynamoDBClient** uses `config.LoadDefaultConfig` — resolves credentials via IRSA (`AWS_ROLE_ARN` + `AWS_WEB_IDENTITY_TOKEN_FILE`) with no static credentials (D-10)
 
 ### Server wiring
+
 - **CloudBackend interface** in `internal/sidecar/server` — `Get/Create/Query/Delete` over `map[string]types.AttributeValue`
 - **TaskServer.RegisterBackend(cloud, backend)** enables named backend registration at startup
 - **GetTask/CreateTask/QueryTasks/DeleteTask** all route to the registered backend per `req.Cloud` field (D-12)
@@ -95,13 +98,15 @@ metrics:
 ### Auto-fixed Issues
 
 **1. [Rule 2 - Missing coverage] Added TaskServer unit tests**
+
 - **Found during:** Task 3 (server wiring)
-- **Issue:** `internal/sidecar/server` had [no test files] after adding real routing logic; hardness requires ≥80% for sidecar adapter layer
+- **Issue:** `internal/sidecar/server` had [no test files] after adding real routing logic; Harness requires ≥80% for sidecar adapter layer
 - **Fix:** Created `internal/sidecar/server/task_server_test.go` with 15 tests covering all routing paths, error mapping, and unknown-cloud validation
 - **Files modified:** `internal/sidecar/server/task_server_test.go`
 - **Commit:** 58e7021
 
 **2. [Rule 1 - Bug] Removed phantom `fmt` import**
+
 - **Found during:** Task 3 refactor
 - **Issue:** Initial task_server.go draft included `fmt` import with `var _ = fmt.Sprintf` guard; `fmt` not actually used in the file
 - **Fix:** Removed the import and guard; build confirmed clean

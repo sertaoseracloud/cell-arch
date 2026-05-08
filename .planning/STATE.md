@@ -10,15 +10,15 @@
 
 ## Current Position
 - **Phase**: 4 — Observability
-- **Plan**: Phase 4 Wave 1 complete — Plans 01-02 done, 03-05 pending
+- **Plan**: Phase 4 Wave 2 complete — Plans 01-04 done, 05 pending
 - **Status**: Phase 3 complete — Ready for Phase 4
-- **Progress**: ████████████ 65%
+- **Progress**: █████████████ 75%
 
 ## Performance Metrics
 | Metric | Value |
 |--------|-------|
 | Phases complete | 3 / 5 |
-| Plans complete | 15 / 28 |
+| Plans complete | 18 / 28 |
 | Requirements met | 20 / 37 |
 | Test coverage | 100% (usecase, config, pkg) / 85% (sidecar) |
 | Phase 2 duration | ~30m |

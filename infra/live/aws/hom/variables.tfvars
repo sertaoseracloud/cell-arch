@@ -1,9 +1,9 @@
 project_name = "cell-arch"
-environment = "dev"
+environment  = "hom"
 aws_region   = "us-east-1"
 
 tags = {
   Project     = "cell-arch"
-  Environment = "dev"
-  ManagedBy  = "terraform"
+  Environment = "hom"
+  ManagedBy   = "terraform"
 }

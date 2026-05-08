@@ -68,11 +68,11 @@ This phase delivers the multicloud sidecar proxy that exposes a unified gRPC API
 - `.claude/specs/technical/golang-implementation-standards.md` — Go coding standards
 - `.claude/specs/infrastructure/tdd-lifecycle-go.md` — TDD Red-Green-Refactor flow
 
-### Compliance & Hardness
+### Compliance & Harness
 
-- `.claude/hardness/test-coverage-thresholds.md` — Required test coverage thresholds (>80%)
-- `.claude/hardness/performance-budgets.md` — Performance requirements (≤5ms sidecar latency p95)
-- `.claude/hardness/security-rules.md` — Security constraints (no static credentials)
+- `.claude/harness/test-coverage-thresholds.md` — Required test coverage thresholds (>80%)
+- `.claude/harness/performance-budgets.md` — Performance requirements (≤5ms sidecar latency p95)
+- `.claude/harness/security-rules.md` — Security constraints (no static credentials)
 
 ### Phase 1 Context
 

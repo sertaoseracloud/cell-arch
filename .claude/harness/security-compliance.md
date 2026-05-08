@@ -1,4 +1,4 @@
-# Hardness: Auditoria de Segredos e Segurança Criptográfica
+# Harness: Auditoria de Segredos e Segurança Criptográfica
 
 ## 1. Rotação e Expiração
 

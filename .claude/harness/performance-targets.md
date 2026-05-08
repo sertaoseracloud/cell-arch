@@ -1,4 +1,4 @@
-# Hardness: Metas de Performance e Eficiência
+# Harness: Metas de Performance e Eficiência
 
 ## 1. Latência do Sidecar (Overhead)
 

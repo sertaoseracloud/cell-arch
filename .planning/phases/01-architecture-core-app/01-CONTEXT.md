@@ -68,11 +68,11 @@ This phase delivers the foundational Go application structure using Clean Archit
 - `.claude/specs/technical/golang-implementation-standards.md` — Go coding standards
 - `.claude/specs/infrastructure/tdd-lifecycle-go.md` — TDD Red-Green-Refactor flow
 
-### Compliance & Hardness
+### Compliance & Harness
 
-- `.claude/hardness/test-coverage-thresholds.md` — Required test coverage thresholds (>80%)
-- `.claude/hardness/performance-budgets.md` — Performance requirements
-- `.claude/hardness/security-rules.md` — Security constraints
+- `.claude/harness/test-coverage-thresholds.md` — Required test coverage thresholds (>80%)
+- `.claude/harness/performance-budgets.md` — Performance requirements
+- `.claude/harness/security-rules.md` — Security constraints
 
 </canonical_refs>
 

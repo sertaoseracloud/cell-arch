@@ -1,20 +1,20 @@
 variable "project_name" {
-  type    = string;
+  type    = string
   default = "cell-arch"
 }
 
 variable "environment" {
-  type    = string;
+  type    = string
   default = "dev"
 }
 
 variable "aws_region" {
-  type    = string;
+  type    = string
   default = "us-east-1"
 }
 
 variable "tags" {
-  type    = map(string);
+  type    = map(string)
   default = {
     Project     = "cell-arch"
     Environment = "dev"

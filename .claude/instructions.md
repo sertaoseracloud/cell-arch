@@ -13,7 +13,7 @@ Este documento estabelece as diretrizes obrigatórias e inegociáveis para o des
 
 * **TDD Obrigatório**: Inicie qualquer funcionalidade pelo teste de contrato ou unitário. Siga o fluxo Red-Green-Refactor conforme `.claude/specs/technical/tdd-lifecycle-go.md`.
 * **Testcontainers-go**: Testes de integração devem validar a paridade entre LocalStack (AWS) e Cosmos Emulator (Azure).
-* **Hardness Compliance**: O código só é válido se passar nos critérios de cobertura (thresholds) e ]nos cenários de falha definidos em `.claude/hardness/`.
+* **Harness Compliance**: O código só é válido se passar nos critérios de cobertura (thresholds) e ]nos cenários de falha definidos em `.claude/harness/`.
 
 ## 3. Infraestrutura e Landing Zones
 
@@ -30,12 +30,12 @@ Este documento estabelece as diretrizes obrigatórias e inegociáveis para o des
 ## 5. Fluxo de Trabalho (GitHub & Git Flow)
 
 ### Commitlint e GitFlow
-- Instale `commitlint` e `husky` como dev dependencies (`npm i -D @commitlint/{config-conventional,cli} husky`).
-- O hook `commit-msg` garantirá que todas as mensagens sigam o padrão Conventional Commits, adequado ao fluxo Gitflow (feature/, hotfix/, release/).
-- O autor dos commits deve ser **sertaoseracloud <engcfraposo@gmail.com>**.
-- Antes de cada merge, execute `git flow release start <versão>` e siga o ciclo de release.
 
+* Instale `commitlint` e `husky` como dev dependencies (`npm i -D @commitlint/{config-conventional,cli} husky`).
 
+* O hook `commit-msg` garantirá que todas as mensagens sigam o padrão Conventional Commits, adequado ao fluxo Gitflow (feature/, hotfix/, release/).
+* O autor dos commits deve ser **sertaoseracloud <engcfraposo@gmail.com>**.
+* Antes de cada merge, execute `git flow release start <versão>` e siga o ciclo de release.
 
 * **Git Flow**: Nenhuma alteração é permitida diretamente em `main` ou `develop`. Utilize branches `feature/`, `hotfix/` ou `release/`.
 * **GitHub Actions CI/CD**: O pipeline deve realizar scans de segurança (`Trivy`/`tfsec`) e testes de integração antes de qualquer deploy.
@@ -56,6 +56,35 @@ Antes de fornecer qualquer solução, valide internamente:
 4. Existe um plano de testes baseado em TDD e Testcontainers?
 5. A comunicação App/Sidecar está documentada e segura?
 
+## 8. Diretiva de QA e Confiabilidade
+
+Parity Testing: É mandatório que o pipeline de CI execute a mesma suíte de testes funcionais contra os emuladores de ambos os provedores de nuvem.
+
+Contract Enforcement: O QA deve validar que o Sidecar não altera a semântica dos dados ao traduzi-los entre os SDKs.
+
+Observability-Driven Testing: Utilize as métricas geradas pelo OpenTelemetry para validar se o sistema está operando dentro dos SLAs definidos em hardness/performance-targets.md.
+
+Resilience Validation: O deploy final só é aprovado se o sistema demonstrar recuperação automática em cenários de falha injetada (Simulated Outage).
+
+## 9. Arquitetura de Software (Golang)
+
+* **Core Agnosticism**: O código em `/internal` é sagrado. Nenhuma referência a `aws-sdk-go` ou `azure-sdk-for-go` é permitida fora do `/cmd/sidecar`.
+* **Error Handling**: Utilize `errors.Is` e `errors.As`. Erros devem ser enriquecidos com contexto mas nunca expor detalhes de infraestrutura para a camada de domínio.
+* **Concurrency**: Use goroutines para telemetria não bloqueante e contextos para cancelamento em cascata.
+
+## 10. Infraestrutura e Identidade
+
+* **OIDC Mandatory**: Todo deploy via GitHub Actions deve usar `aws-actions/configure-aws-credentials` ou `azure/login` via tokens federados. Proibido segredos no repositório.
+* **Network Isolation**: Recursos de banco de dados não possuem IPs públicos. O acesso é restrito via endpoints de interface na VPC/VNet.
+
+## 11. Protocolo GSD (Get Stuff Done)
+
+* **Step 1**: PM valida a prioridade.
+* **Step 2**: Data/Integration Architects definem o contrato (.proto).
+* **Step 3**: Cloud Architects provisionam o Terraform em ambiente de Sandbox.
+* **Step 4**: Go Engineer implementa via TDD.
+* **Step 5**: QA valida a paridade funcional AWS vs Azure.
+
 ---
 
-> **Atenção**: Se houver conflito entre a facilidade de implementação e o rigor das especificações em `.claude/specs/` ou `.claude/hardness/`, o rigor deve prevalecer. Esta PoC é um projeto de alta densidade técnica e deve refletir práticas de nível Staff Engineer.
+> **Atenção**: Se houver conflito entre a facilidade de implementação e o rigor das especificações em `.claude/specs/` ou `.claude/harness/`, o rigor deve prevalecer. Esta PoC é um projeto de alta densidade técnica e deve refletir práticas de nível Staff Engineer.

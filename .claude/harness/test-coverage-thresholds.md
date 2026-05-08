@@ -1,4 +1,4 @@
-# Hardness: Metas de Cobertura e Contratos de Teste
+# Harness: Metas de Cobertura e Contratos de Teste
 
 ## 1. Cobertura de Código (Code Coverage)
 

@@ -96,7 +96,7 @@
 
 1. Main Go app compiles and runs WITHOUT any cloud SDK imports
 2. Sidecar successfully proxies requests to both AWS DynamoDB and Azure CosmosDB
-3. All layers have >80% test coverage (as per `.claude/hardness/test-coverage-thresholds.md`)
+3. All layers have >80% test coverage (as per `.claude/harness/test-coverage-thresholds.md`)
 4. Terraform modules deploy identical architecture to both clouds
 5. OpenTelemetry traces propagate from app through sidecar to cloud services
 6. GitHub Actions pipeline passes with OIDC authentication (no static secrets)

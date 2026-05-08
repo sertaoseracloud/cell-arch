@@ -1,0 +1,35 @@
+name: Observability Performance Benchmark
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache: true
+      - name: Install ghz
+        run: go install github.com/bojand/ghz/cmd/ghz@latest
+      - name: Build sidecar
+        run: go build -o sidecar ./cmd/sidecar
+
+  benchmark:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache: true
+      - name: Install ghz
+        run: go install github.com/bojand/ghz/cmd/ghz@latest
+      - name: Run benchmark
+        run: bash test/performance/ghz_benchmark.sh
+        timeout-minutes: 5

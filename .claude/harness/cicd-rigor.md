@@ -1,4 +1,4 @@
-# Hardness: Rigor de Automação e Pipeline
+# Harness: Rigor de Automação e Pipeline
 
 ## 1. Pipeline Failure Policy
 

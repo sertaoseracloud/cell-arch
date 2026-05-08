@@ -1,4 +1,4 @@
-# Hardness: Validação e Auditoria de Landing Zones
+# Harness: Validação e Auditoria de Landing Zones
 
 ## 1. Isolamento de Rede
 

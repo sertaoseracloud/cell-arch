@@ -93,18 +93,22 @@ func Graceful(parent context.Context, logger zerolog.Logger) (context.Context, c
 **File:** `internal/task/infrastructure/repo/sidecar_repo.go:67`
 
 **Issue:** The sentinel `errNotImplemented` is declared as:
+
 ```go
 var errNotImplemented = fmt.Errorf("not implemented")
 ```
+
 `fmt.Errorf` without a `%w` verb returns a plain `*errors.errorString`-compatible value, but its identity differs from `errors.New`. More critically: because `errNotImplemented` is then wrapped with `%w` at every call site (e.g. line 39), callers *can* technically reach it via `errors.Is`. However, the canonical Go pattern for sentinel errors is `errors.New`, not `fmt.Errorf`. Using `fmt.Errorf` here is a code quality issue that will confuse any linter (`noerrcheck`) and deviates from project convention established in `pkg/errors/errors.go` (which re-exports `errors.New`). More importantly, if this variable is ever refactored to include a formatted message (adding a `%w` or `%v`), the behavior changes silently.
 
 The package-level `var` with `fmt.Errorf` is the exact anti-pattern the `pkg/errors` package was designed to replace.
 
 **Fix:**
+
 ```go
 // Use errors.New for sentinel values — identity is defined by pointer, not message.
 var errNotImplemented = errors.New("not implemented")
 ```
+
 Add the import: `"errors"`. Alternatively, use `pkg/errors.New` to remain consistent with the project's error package.
 
 ---
@@ -129,6 +133,7 @@ if err := run(ctx, logger); err != nil {
 ```
 
 Or use `logger.Error()` + explicit `os.Exit(1)` if the intent is to allow deferred cleanup:
+
 ```go
 if err := run(ctx, logger); err != nil {
     logger.Error().Err(err).Msg("application error")
@@ -143,9 +148,11 @@ if err := run(ctx, logger); err != nil {
 **File:** `cmd/app/app.go:34`
 
 **Issue:** The `cloud` argument to `NewSidecarRepo` is hardcoded as `"aws"`:
+
 ```go
 taskRepo := repo.NewSidecarRepo(cfg.SidecarAddr, "aws", logger)
 ```
+
 This magic string is not validated anywhere and does not appear in any enumeration or constant. When Azure support is added (the project is explicitly multicloud), this will require a code change rather than a configuration change. It also means the `cloud` field has no effect on actual routing logic in Phase 1, making it misleading.
 
 **Fix:** Define a typed constant or add a `Cloud` field to `AppConfig` loaded from an environment variable:
@@ -176,9 +183,11 @@ Cloud: Cloud(getEnvOrDefault("CLOUD_PROVIDER", "aws")),
 **File:** `internal/sidecar/aws/dynamodb_client.go:46-47`
 
 **Issue:** When DynamoDB returns a nil `result.Item` (item not found), the client returns:
+
 ```go
 return nil, fmt.Errorf("item not found")
 ```
+
 This is a plain string error with no sentinel identity. The error mapper in `internal/sidecar/errors/mapper.go` does not match this string — `"item not found"` is not one of the AWS error type strings it checks (`ResourceNotFoundException`, etc.). As a result, a missing-item lookup will be mapped to `codes.Internal` instead of `codes.NotFound` when it passes through `MapAWSError`. This is a logic bug that will cause callers to receive incorrect gRPC status codes for missing resources.
 
 **Fix:** Define a package-level sentinel and check for it in the mapper, or return a wrapped SDK-style error:
@@ -211,6 +220,7 @@ if errors.Is(err, dynamodbclient.ErrItemNotFound) {
 3. A custom `contains()` function reimplements `strings.Contains` from stdlib — this is dead code complexity.
 
 **Fix for AWS:** Use `errors.As` with the SDK's typed error types:
+
 ```go
 import "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 
@@ -239,6 +249,7 @@ func MapAWSError(err error) error {
 **Issue:** `Create` and `Update` accept `title` and `description` strings without any validation. A blank `title` will be persisted without error. In `Update`, an empty `id` string is passed to `repo.Get` without a nil/empty check. While these are business-rule decisions, the domain layer has no validation layer at all — there is no `Validate()` method on `Task` and no guard in the service. When the gRPC handler is wired in Phase 2, invalid inputs from the network will reach the database layer unchecked.
 
 **Fix:** Add a validation step in `Create` and `Update`:
+
 ```go
 func (s *Service) Create(ctx context.Context, title, description string) (*entity.Task, error) {
     if strings.TrimSpace(title) == "" {
@@ -264,9 +275,11 @@ func (s *Service) Update(ctx context.Context, id, title, description string, sta
 **Issue:** The module file specifies `go 1.25.0`. As of the knowledge cutoff (August 2025), Go 1.25 had not been officially released. Declaring a future/unreleased toolchain version can cause `go build` to fail on CI runners that have Go 1.23 or 1.24 installed, and may generate `go: note: module requires Go >= 1.25` warnings. This is a toolchain compatibility risk.
 
 **Fix:** Downgrade to the highest stable released version the codebase actually requires:
+
 ```
 go 1.23.0
 ```
+
 Or, if Go 1.24 features are intentionally used, set `go 1.24.0`. Avoid specifying unreleased versions.
 
 ---
@@ -280,6 +293,7 @@ Or, if Go 1.24 features are intentionally used, set `go 1.24.0`. Avoid specifyin
 **Issue:** The private `contains` and `findSubstr` functions are a manual reimplementation of `strings.Contains`. This adds 14 lines of dead complexity with no benefit.
 
 **Fix:**
+
 ```go
 import "strings"
 
@@ -293,9 +307,10 @@ import "strings"
 
 **File:** `pkg/shutdown/shutdown.go`
 
-**Issue:** The `Graceful` function has no unit tests. Per the hardness requirement, domain and use-case code requires 100% coverage. The `shutdown` package sits in `pkg/` which is shared infrastructure — it is not domain or use-case code, so the 100% threshold does not strictly apply. However, given that CR-01 identifies a real defect in `signalName()`, a test that exercises the signal-capture path would have caught the bug.
+**Issue:** The `Graceful` function has no unit tests. Per the Harness requirement, domain and use-case code requires 100% coverage. The `shutdown` package sits in `pkg/` which is shared infrastructure — it is not domain or use-case code, so the 100% threshold does not strictly apply. However, given that CR-01 identifies a real defect in `signalName()`, a test that exercises the signal-capture path would have caught the bug.
 
 **Fix:** Add a test that sends a signal to the process and verifies the context is cancelled:
+
 ```go
 func TestGraceful_CancelOnSIGINT(t *testing.T) {
     ctx, stop := Graceful(context.Background(), zerolog.Nop())
@@ -322,6 +337,7 @@ func TestGraceful_CancelOnSIGINT(t *testing.T) {
 **Issue:** `d.logger.Debug().Interface("item", item).Msg("DynamoDB PutItem")` logs the full `map[string]types.AttributeValue` item. In production, this could log PII or sensitive task data. The `Debug` level is typically suppressed in production, but it is still a risk when debug logging is enabled for troubleshooting.
 
 **Fix:** Log only non-sensitive identifiers (e.g. the item count or a sanitized key):
+
 ```go
 d.logger.Debug().Int("attribute_count", len(item)).Msg("DynamoDB PutItem")
 ```
@@ -335,6 +351,7 @@ d.logger.Debug().Int("attribute_count", len(item)).Msg("DynamoDB PutItem")
 **Issue:** Both `Get` and `Create` hardcode `const partitionKey = "task"`. In CosmosDB, the partition key value is typically the item's own ID or a tenant discriminator — using a fixed constant means all items share a single logical partition, which defeats the scaling model of CosmosDB. This will become a correctness and performance problem at scale.
 
 **Fix:** Accept the partition key as a parameter (or derive it from the item `id`):
+
 ```go
 func (c *CosmosDBClient) Get(ctx context.Context, id string) (map[string]interface{}, error) {
     response, err := c.container.ReadItem(
@@ -349,13 +366,14 @@ func (c *CosmosDBClient) Get(ctx context.Context, id string) (map[string]interfa
 
 ---
 
-### IN-05: Mock Repository Uses `testify/mock` Instead of `uber-go/mock` as Required by Hardness Spec
+### IN-05: Mock Repository Uses `testify/mock` Instead of `uber-go/mock` as Required by Harness Spec
 
 **File:** `internal/task/usecase/mock_repository_test.go:6`
 
-**Issue:** The hardness specification at `.claude/hardness/test-coverage-thresholds.md` explicitly states: "Mocking: Proibido o uso de chamadas reais de rede nos testes unitários. Interfaces de repositório devem ser mockadas via `uber-go/mock`." The mock here uses `github.com/stretchr/testify/mock`. The comment in the file acknowledges this ("Phase 5 will use mockery/mockgen"), but `uber-go/mock` (the successor to `golang/mock`) is the mandated tool.
+**Issue:** The Harness specification at `.claude/harness/test-coverage-thresholds.md` explicitly states: "Mocking: Proibido o uso de chamadas reais de rede nos testes unitários. Interfaces de repositório devem ser mockadas via `uber-go/mock`." The mock here uses `github.com/stretchr/testify/mock`. The comment in the file acknowledges this ("Phase 5 will use mockery/mockgen"), but `uber-go/mock` (the successor to `golang/mock`) is the mandated tool.
 
 **Fix:** This is a Phase 5 backlog item as noted. No immediate action required, but track as a compliance debt. When generating mocks, use:
+
 ```bash
 mockgen -source=internal/task/entity/task.go \
         -destination=internal/task/usecase/mock_repository_test.go \
@@ -364,6 +382,6 @@ mockgen -source=internal/task/entity/task.go \
 
 ---
 
-_Reviewed: 2026-05-07T00:00:00Z_
-_Reviewer: Claude (gsd-code-reviewer)_
-_Depth: standard_
+*Reviewed: 2026-05-07T00:00:00Z*
+*Reviewer: Claude (gsd-code-reviewer)*
+*Depth: standard*
