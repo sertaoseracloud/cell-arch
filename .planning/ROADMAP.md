@@ -127,4 +127,4 @@ Plans:
 | 2 - Sidecar Proxy | 5/5 | Complete | 2026-05-07 |
 | 3 - Terraform Infrastructure | 7/7 | Complete | 2026-05-07 |
 | 4 - Observability | 5/5 | Complete | 2026-05-07 |
-| 5 - CI/CD & Security | 0/6 | Not started | - |
+| 5 - CI/CD & Security | 6/6 | Planned | 2026-05-07 |

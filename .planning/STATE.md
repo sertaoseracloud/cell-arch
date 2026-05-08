@@ -18,7 +18,7 @@
 | Metric | Value |
 |--------|-------|
 | Phases complete | 4 / 5 |
-| Plans complete | 19 / 28 |
+| Plans complete | 25 / 28 |
 | Discussions complete | 5 / 5 |
 | Requirements met | 20 / 37 |
 | Test coverage | 100% (usecase, config, pkg) / 85% (sidecar) |
