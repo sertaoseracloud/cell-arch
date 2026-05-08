@@ -76,7 +76,7 @@ Plans:
 - [x] 04-02-PLAN.md — Initialize OpenTelemetry SDK in app and sidecar (OBSV-01) — Wave 1 complete
 - [x] 04-03-PLAN.md — Add gRPC interceptors for trace propagation (OBSV-02) — Wave 2 complete
 - [x] 04-04-PLAN.md — Metrics, structured logging, Grafana dashboards (OBSV-03, OBSV-04) — Wave 2 complete
-- [ ] 04-05-PLAN.md — Performance benchmark with ghz and CI integration (TEST-05) — Wave 3 pending
+- [x] 04-05-PLAN.md — Performance benchmark with ghz and CI integration (TEST-05) — Wave 3 complete
 
 ### Phase 4: Observability
 
@@ -126,5 +126,5 @@ Plans:
 | 1 - Architecture & Core App | 1/1 | Complete | 2026-05-07 |
 | 2 - Sidecar Proxy | 5/5 | Complete | 2026-05-07 |
 | 3 - Terraform Infrastructure | 7/7 | Complete | 2026-05-07 |
-| 4 - Observability | 4/5 | In progress (Wave 2 done) | 2026-05-07 |
+| 4 - Observability | 5/5 | Complete | 2026-05-07 |
 | 5 - CI/CD & Security | 0/6 | Not started | - |
